@@ -1,185 +1,248 @@
 # storyforge — Architecture
 
-Status: draft for review · 2026-11-17 · companion to [PRD.md](PRD.md)
+Status: draft v2 for review · 2026-11-17 · companion to [PRD.md](PRD.md)
 
 ## 1. Constraints that shape the design
 
-- Hosted, multi-user web app; manuscripts are private by default and must never leak across users.
-- Long documents (a book is 80–200k words) and long Claude calls (a chapter review can take a minute or more), so the server must stream and run background jobs, not just short serverless requests.
-- One small team, one language: TypeScript end to end.
+- storyforge is the successor to cowriter: its data model must hold everything a cowriter book folder holds, and import/export it without loss.
+- The server is the single copy of a book. No client-side store that syncs later (the Manuscript Desk's failure mode).
+- Claude features are long (drafting a chapter in two languages, chapter reviews) and must not change the book until the author accepts; they run as background jobs that produce **proposals**.
+- Hosted, multi-user, private by default. One author per book in v1.
+- One language end to end: TypeScript.
 
 ## 2. Stack
 
 | Concern | Choice | Why |
-|---------|--------|-----|
-| Language | TypeScript (strict), Node.js 22 LTS | One language for UI, server, worker |
-| Web framework | Next.js 15 (App Router), React 19 | Server components + server actions + route handlers in one app |
-| Editor | TipTap 2 (ProseMirror) | Mature rich-text model, custom nodes (scene break, author note, entry mention), JSON document storage |
-| Database | PostgreSQL 16 | Relational ownership model, full-text search (`tsvector`), JSONB for documents, job queue |
-| ORM / migrations | Drizzle ORM + drizzle-kit | Typed SQL, plain SQL migrations in the repo |
-| Auth | Auth.js (NextAuth v5) with Drizzle adapter; email magic link + Google | Standard, self-hosted sessions in Postgres |
-| Validation | Zod at every server boundary | One schema for input validation and types |
-| Background jobs | pg-boss on the same Postgres | No extra infrastructure; retries, scheduling |
-| Object storage | S3-compatible (MinIO locally) | Library cover images, import/export files |
-| Claude | `@anthropic-ai/sdk`, model `claude-opus-5-5` | See §7 |
-| Logging | pino (+ pino-pretty in dev) | Structured JSON, fast, child loggers |
-| Tests | Vitest, Playwright | Unit/integration and browser e2e |
-| Packaging | Docker image, two roles: `web` and `worker` | Long-lived processes for streaming and jobs |
+|---|---|---|
+| Language / runtime | TypeScript (strict), Node.js 22 LTS | One language for UI, server, worker, importer, texture measures |
+| Web framework | Next.js 15 (App Router), React 19 | Server components, server actions, route handlers in one app |
+| Rich text | TipTap 2 (ProseMirror) | Concept, research notes, rules, character entries; paragraph editor uses a lighter TipTap instance per paragraph |
+| Database | PostgreSQL 16 | Relational book model, JSONB for flexible sub-structures, full-text search, job queue |
+| ORM / migrations | Drizzle ORM + drizzle-kit | Typed SQL, SQL migrations in the repo |
+| Auth | Auth.js v5 (Drizzle adapter), email magic link + Google | Self-hosted sessions |
+| Validation | Zod at every boundary (inputs, Claude structured outputs, import parsers) | One schema for checks and types |
+| Background jobs | pg-boss | Claude features, import/export, purges; retries; cancel |
+| Object storage | S3-compatible (MinIO locally) | Research PDFs/images, public-library texts, import/export zips |
+| Markdown | unified / remark (+ remark-gfm, footnotes) | Import of cowriter files, export back to them |
+| Claude | `@anthropic-ai/sdk`, default `claude-opus-5-5` | See §7 |
+| Logging | pino | Structured JSON, child loggers |
+| Tests | Vitest, Playwright | Unit/integration, e2e |
+| Packaging | Docker image, roles `web` and `worker` | Long-lived processes for streams and jobs |
 
 ## 3. Components
 
 ```mermaid
 flowchart LR
   subgraph Browser
-    UI[Next.js React UI\nTipTap editor\nOutline / Library panel / Review list]
+    UI[React UI\nPlan · Scenes · Library · Voices/Lab\nDraft editor · Reader · Proposals]
   end
   subgraph App["storyforge (Docker image)"]
-    WEB[web role\nNext.js server:\nserver actions, route handlers,\nSSE streams]
-    WORKER[worker role\npg-boss consumers:\nstructure review, import/export,\npurge jobs]
-    DOMAIN[domain modules\nmanuscript · library · ai · usage · auth]
+    WEB[web role\nserver actions, route handlers,\nSSE: inline edit stream, job progress]
+    WORKER[worker role\npg-boss consumers:\nClaude features, import/export, purges]
+    subgraph DOMAIN[domain modules - src/server]
+      BOOK[book · plan · scenes]
+      LIB[library · public-library]
+      VOICE[voices · styles]
+      TEXT[drafts · manuscript]
+      AI[ai: client, brief builder,\nfeatures, proposals]
+      TEX[texture: measures + tuning shifts]
+      IO[cowriter import/export]
+      USAGE[usage]
+    end
   end
-  PG[(PostgreSQL\ndata + sessions + job queue)]
-  S3[(S3-compatible\nobject storage)]
-  CLAUDE[[Claude API\nMessages]]
+  PG[(PostgreSQL)]
+  S3[(Object storage)]
+  CLAUDE[[Claude API]]
+  GH[[GitHub API\nimport source]]
 
-  UI -- server actions / fetch --> WEB
-  UI -- SSE --> WEB
+  UI --> WEB
   WEB --> DOMAIN
   WORKER --> DOMAIN
   DOMAIN --> PG
   DOMAIN --> S3
-  DOMAIN -- "ai module only" --> CLAUDE
+  AI --> CLAUDE
+  IO --> GH
   WEB -- enqueue --> PG
   PG -- jobs --> WORKER
 ```
 
-- **web**: renders UI, handles server actions (CRUD, autosave), streams inline-edit suggestions over SSE, enqueues jobs, serves job status.
-- **worker**: runs pg-boss jobs — chapter structure review, import/export, account purge, soft-delete purge.
-- **domain modules** (`src/server/<module>`): the only code that touches the database or Claude. Every exported function takes an `actor` (the signed-in user) and enforces ownership itself; UI and handlers never query tables directly.
+- Only `src/server/<module>` touches the database, storage, Claude or GitHub. Every exported domain function takes an `actor` and enforces ownership.
+- **Proposals** are the hinge between Claude and the book: a Claude job writes a `proposal` with typed `proposal_item`s (e.g. "set paragraph 03.014 text (EN) from X to Y", "add scene card 3.4", "add continuity fact"); the author accepts or rejects items; accepting applies them through the normal domain functions in one transaction and records the origin.
+- **Brief builder** (`ai/brief`): assembles the context a feature needs from book data, in a fixed order so the stable part is cacheable — the equivalent of the Desk's `context/book` and `context/ch-NN` documents and the skills' context packets.
+- **Texture** (`texture`): pure TypeScript port of cowriter's `texture.py` measures, `TARGET_LABELS` and `TUNING_SHIFTS`, with golden tests against the Python outputs.
 
 ### Repository layout
 
 ```
 src/
-  app/                 Next.js routes (UI pages, route handlers under app/api)
-  components/          React components (editor/, outline/, library/, review/)
+  app/                 routes: (book)/[bookId]/plan, scenes, library, voices, lab, draft, reader; admin/; api/
+  components/          plan/, scenes/, library/, voices/, draft/, reader/, proposals/
   server/
-    auth/              Auth.js config, getActor()
-    manuscript/        projects, chapters, scenes, snapshots
-    library/           libraries, entries, attachments, publishing, reports
-    ai/                Claude client, prompts, inline-edit, structure-review
-    usage/             metering, quotas
-    jobs/              pg-boss setup and job handlers
-    db/                drizzle schema, client, migrations
-    log.ts             logger factory
-  worker.ts            worker entrypoint
-tests/
-  unit/  integration/  e2e/  fixtures/claude/
+    auth/  book/  plan/  scenes/  library/  public-library/  voices/  styles/
+    drafts/  manuscript/  ai/{client,brief,features,proposals}/  texture/
+    cowriter/{import,export,parsers}/  usage/  jobs/  db/  log.ts
+  shared/              framework.ts (tags + 31 dimensions, groups A–G), id-scheme.ts, readiness.ts
+  worker.ts
+tests/  unit/ integration/ e2e/ fixtures/{claude,cowriter-book,texture}/
 ```
 
 ## 4. Key request paths
 
-### Inline edit (streamed)
+### Claude feature as a job → proposal → accept
 
 ```mermaid
 sequenceDiagram
-  participant B as Browser (editor)
-  participant W as web: /api/ai/inline-edit (SSE)
-  participant U as usage
-  participant A as ai.inlineEdit
+  participant B as Browser
+  participant W as web
+  participant Q as pg-boss
+  participant K as worker: ai.feature
   participant C as Claude API
-  B->>W: POST {sceneId, selection range, action, instruction?}
-  W->>W: getActor(), Zod validate, ownership(sceneId)
-  W->>U: checkQuota(actor)
-  U-->>W: ok / refused
-  W->>A: build prompt (style sheet, surrounding text, selection)
-  A->>C: messages.stream (claude-opus-5-5, effort low)
-  C-->>A: text deltas
-  A-->>W: deltas
-  W-->>B: SSE events (delta…, done{usage})
-  A->>U: record(ai_usage)
-  B->>B: show word diff; Accept → replace selection (one undo step) → autosave
+  B->>W: runFeature(feature, chapterId, options)
+  W->>W: actor, ownership, quota check, cost estimate
+  W->>Q: enqueue ai.<feature> {jobId, requestId}
+  W-->>B: jobId
+  B->>W: SSE /api/jobs/:id (progress)
+  Q->>K: job
+  K->>K: brief builder (cached prefix + chapter part)
+  K->>C: messages.stream (structured output)
+  C-->>K: result
+  K->>K: Zod-validate, map to proposal items
+  K->>W: proposal saved, job done
+  W-->>B: progress: done → open proposal
+  B->>W: accept(items) / reject(items)
+  W->>W: apply via domain fns in one tx, record origin + undo data
 ```
 
-### Structure review (background)
+Features and their outputs:
 
-1. Browser calls server action `requestReview(chapterId)` → ownership + quota check → insert `review(status=queued, manuscript_version)` → enqueue `review.chapter` job.
-2. Worker builds the prompt: stable prefix (system prompt, style sheet, referenced library entries, summaries of earlier chapters — cached), then the chapter's scenes with scene ids.
-3. Claude returns findings as structured output (JSON schema, see §7); worker validates with Zod, anchors each quote to a scene offset, stores `review_finding` rows, marks review `done` (or `failed` with reason).
-4. Browser polls `/api/reviews/:id` (or SSE) for status and renders findings.
+| Feature | Output (proposal items) | Mode |
+|---|---|---|
+| readiness | readiness line + per-parameter reasons | job |
+| scene-builder | scene cards (add/replace), plan changes, open questions | job (brainstorm = multi-step job with author answers between steps) |
+| drafting | draft first text: paragraphs per language with ids, scene markers, footnotes | job |
+| inline-edit | replacement text for a selection | streamed SSE, no job |
+| apply-tuning | paragraph rewrites per language with "what changed / what to check" | job, item per paragraph, streamed into the proposal as each lands |
+| sense-and-flow | fixes (move, merge, cut, bridge, rewrite) | job |
+| prose-review | report + paragraph suggestions + continuity facts | job (chapter pass + paragraph passes) |
+| voice-lab-test / voice-rules | test paragraphs / drafted rules | job |
+
+Inline edit and voice-lab tests write directly to their own records (suggestion view, lab tests) rather than the book, so they skip the proposal table.
+
+### Autosave of a paragraph
+
+Client keeps a per-paragraph pending queue; `saveParagraph(id, lang, text, baseVersion)` → domain checks `version = baseVersion` → update + `version+1` + history row (coalesced to one per 10 min per paragraph unless manual) → ack. Conflict → 409 with server text; the UI shows both. Pending edits survive reload via `sessionStorage` until acked.
 
 ## 5. Data model (sketch)
 
 ```
-user(id, email, name, role[user|admin], monthly_token_cap?, created_at)
-project(id, owner_id→user, title, word_target?, style_sheet jsonb, deleted_at?)
-chapter(id, project_id, title, position, deleted_at?)
-scene(id, chapter_id, title, position, doc jsonb, text, word_count, version int, updated_at, deleted_at?)
-scene_snapshot(id, scene_id, doc jsonb, word_count, reason[auto|manual|ai_accept|restore], created_at)
-library(id, owner_id, title, description, visibility[private|public], licence?, cover_key?, hidden_at?, published_at?)
-library_entry(id, library_id, type, title, aliases text[], body jsonb, text, tags text[], fields jsonb, search tsvector)
-project_library(project_id, library_id, attached_at)       -- live attachment
-library_report(id, library_id, reporter_id, reason, created_at, resolved_at?)
-review(id, chapter_id, requested_by, status[queued|running|done|failed], manuscript_version jsonb, model, error?, created_at)
-review_finding(id, review_id, scene_id, category, severity, quote?, anchor jsonb?, explanation, suggestion, state[open|resolved|dismissed])
-ai_usage(id, user_id, feature, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cost_usd, anthropic_request_id, created_at)
+user(id, email, name, role, monthly_token_cap?)
+
+book(id, owner_id, slug, title, one_liner, length_target, length_limit, id_scheme jsonb,
+     truth_labels text[], profile_notes jsonb, created_at)
+book_language(book_id, code, name, written_first bool, position)
+standing_rule(id, book_id, number, body jsonb, decided_on date)
+concept(book_id, body jsonb)
+part(id, book_id, title jsonb /*per lang*/, position)
+chapter(id, book_id, part_id, code /*'01','00','99','INT'*/, title jsonb, position, when_where, 
+        readiness jsonb /*score, params, date, by*/)
+
+plan_item(id, chapter_id, kind[event|fact|note|source], number, text jsonb, truth_label?, to_verify bool,
+          source_refs uuid[], research_doc_id?, position, removed_at?, updated_by, updated_at)
+scene_card(id, chapter_id, number, title, covers jsonb, when, where, scenario_spot_id?, pov,
+           characters jsonb, shape jsonb /*19,20,27-30 + things*/, slow_down, reader_feeling,
+           texture_note, note, position)
+
+research_folder(id, book_id, path) ; research_doc(id, book_id, folder_id, title, kind[md|pdf|image],
+           body jsonb?, file_key?, truth_label?)
+character(id, book_id, name, names_by_stage jsonb, group?, bullets jsonb, speech_voice_id?, position)
+continuity_fact(id, book_id, category, text, paragraph_refs text[], character_id?, created_from?)
+scenario(id, book_id, place, period, body jsonb) ; scenario_spot(id, scenario_id, key, text)
+colour_script(book_id, body jsonb)
+lexicon_entry(id, book_id, key, terms jsonb /*lang->term*/, notes jsonb /*lang->note*/)
+
+voice(id, book_id, code /*NARR-MAIN*/, name, type, tags jsonb, status)
+voice_version(id, voice_id, version, dims jsonb /*1..31: base,min,max,note*/, rules jsonb,
+              texture jsonb, layers jsonb /*lang->layer*/, change_note, created_at)
+author_library_entry(id, book_id, public_author_id?, name, scores jsonb, portrait, fit_notes)
+chapter_style(chapter_id, voice_in_use_id)
+chapter_voice_setting(chapter_id, voice_id, tuning jsonb, reason, status, texture_overrides jsonb)
+voice_lab_test(id, book_id, voice_id, profile jsonb, chapter_id?, langs, paragraphs jsonb, note, created_at)
+
+draft(id, chapter_id, voice_id)                                 -- one per chapter per narrator voice
+draft_version(id, draft_id, kind[first|revised])
+paragraph(id, book_id, chapter_id, container_id /*draft_version or manuscript*/, pid /*'03.014a'*/,
+          order_key, scene_marker?, own_voice_id?, voice_version?, applied_tuning jsonb?,
+          review_status, open_issues, removed_at?)
+paragraph_text(paragraph_id, lang, text, version int, updated_at, updated_by)
+paragraph_history(id, paragraph_id, lang, text, version, reason[auto|manual|ai:<feature>|restore|promote], at)
+scene_review(chapter_id, voice_id, scene_name, at)
+
+public_author(id, name, slug, notes) ; public_book(id, author_id, title, year, language, translator,
+          source, pd_status, text_key?) ; style_study(author_id, body jsonb, scores jsonb)
+texture_profile(author_id, measures jsonb, sample_note)
+
+proposal(id, book_id, feature, chapter_id?, status, summary, created_by_job, created_at)
+proposal_item(id, proposal_id, kind, target jsonb, before jsonb, after jsonb, note, state[open|accepted|rejected], applied_at?)
+job_run(id, kind, book_id, status, progress jsonb, error?, request_id, created_at)
+ai_usage(id, user_id, book_id, feature, model, effort, input_tokens, output_tokens, cache_read, cache_write,
+         cost_usd, anthropic_request_id, stop_reason, created_at)
+import_run(id, book_id, source jsonb, dry_run bool, report jsonb, created_at)
 ```
 
-- Ordering uses integer `position` with renumbering in one transaction on reorder.
-- `scene.version` increments on every save; saves send the version they were based on (optimistic concurrency, FR-7).
-- `text` columns are derived plain text (author notes stripped) used for counts, search and prompts.
-- Read access to a public library is a single query rule: `visibility = 'public' AND hidden_at IS NULL` or owner.
+- The 31-dimension framework (tags, groups A–G, pole labels, language-sensitive dimensions 4/5/6/7/11, scene-level dimensions 19/20/27–30) lives in `src/shared/framework.ts`, not in the database.
+- Paragraph text is one row per language so concurrency, history and "whose wording leads" stay per language.
+- The manuscript is a container like a draft version (`container_id` → manuscript row per book); promote copies paragraphs with their ids.
 
 ## 6. Security
 
-- Every domain function receives `actor` and checks ownership or public visibility; integration tests assert cross-user access is denied for every entity.
-- Server actions are CSRF-protected by Next.js; route handlers check the session and `Origin`.
-- Rate limits (per user, in Postgres) on auth emails and Claude endpoints.
-- User text placed in prompts is wrapped in clearly delimited sections and the system prompt tells Claude that manuscript and library content is material to work on, not instructions (public libraries are untrusted input from other users).
-- Secrets only in env; `.env.example` lists names, never values.
-- Secure-coding rule packs to install at ps-spec init (exact list confirmed then): core, typescript, react, docker, github-actions, ai-security.
+- Ownership enforced in every domain function; integration tests assert cross-user denial for every entity type.
+- Admin-only: public library writes, caps, usage pages (`requireAdmin()`).
+- Server actions CSRF-protected; route handlers check session and `Origin`; rate limits on auth and Claude endpoints.
+- Prompt injection: book text, research and public-library text are placed in delimited sections; system prompts state they are material to work on, not instructions; structured outputs are validated before becoming proposals; nothing Claude returns is executed.
+- Import: zip extraction with size/entry limits and path normalisation (no traversal); GitHub import uses the user's token only for that request, never stored; Markdown parsed, never rendered as raw HTML.
+- Secrets only in env. Secure-coding rule packs: owasp-2025, typescript, react, docker, github-actions, ai-security (`.claude/rules/security/`).
 
 ## 7. Claude integration
 
-- **Client**: one `Anthropic` client in `src/server/ai/client.ts`; all calls go through `ai.call()` which adds logging, usage metering, error mapping and fallbacks.
-- **Model**: `claude-opus-5-5` for both features, configured per feature via env (`AI_INLINE_MODEL`, `AI_REVIEW_MODEL`, `AI_*_EFFORT`) so the operator can switch, e.g. to `claude-sonnet-5-5`, without code changes.
-- **Thinking / effort**: adaptive thinking (the model's default); inline edit at `effort: "low"` for fast first tokens, review at `effort: "high"`.
-- **Streaming**: inline edit uses `messages.stream()` and forwards text deltas over SSE; reviews use `messages.stream()` + `finalMessage()` in the worker to avoid HTTP timeouts on long outputs.
-- **Structured output**: reviews use `output_config.format` with a JSON schema for the findings list, validated again with Zod.
-- **Prompt caching**: the review prompt puts stable content first (system prompt → style sheet → library entries → earlier-chapter summaries) with a cache breakpoint before the chapter text, so re-running reviews on the same book reuses the prefix. `usage.cache_read_input_tokens` is logged to verify hits.
-- **Refusals & fallbacks**: check `stop_reason` before reading content; server-side fallbacks enabled (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`); a `refusal` is shown as a clear message and is not charged against the user's cap.
-- **Errors**: typed SDK errors mapped to user messages: rate limit/overload → "busy, retry", 4xx → logged as bugs. SDK retries (2) left on.
-- **Testing**: a `FakeClaude` replays recorded fixtures from `tests/fixtures/claude/` in unit, integration and e2e tests; real calls only in the manual eval script.
+- **Client**: one `Anthropic` client in `ai/client.ts`; every call goes through `ai.call()` (logging, metering, error mapping, refusal handling, fallbacks, cancellation).
+- **Model**: `claude-opus-5-5` for every feature; per-feature env overrides (`AI_<FEATURE>_MODEL`, `AI_<FEATURE>_EFFORT`).
+- **Effort**: inline edit `low`; readiness `medium`; scene builder, drafting, apply-tuning, reviews `high`; voice lab `medium`.
+- **Streaming**: all calls use `messages.stream()`; inline edit forwards deltas over SSE; jobs use `finalMessage()` and report progress per step.
+- **Structured outputs**: every job feature uses `output_config.format` with a JSON schema mirroring its proposal items; validated again with Zod.
+- **Brief builder & caching**: prompts are ordered tools → system (feature instructions, versioned in `ai/features/<name>/prompt.md`, each naming the cowriter skill section it implements) → book brief (profile, standing rules, concept handle-with-care, lexicon, shared rules, continuity) → voice brief (rules, layers, chapter tuning) → chapter material. Cache breakpoints after the book brief and after the voice brief, so repeated runs on one book reuse them; `cache_read_input_tokens` is logged.
+- **Refusals & fallbacks**: check `stop_reason` before reading content; server-side fallbacks enabled (`fallbacks: "default"` with beta `server-side-fallback-2026-07-01`); a refusal ends the job with a clear message and is not charged against the cap.
+- **Errors**: typed SDK errors mapped to user messages (busy/retry vs bug); SDK retries left at 2; job-level retry only for transient errors.
+- **Testing**: `FakeClaude` replays fixtures from `tests/fixtures/claude/<feature>/`; real calls only in `npm run eval:<feature>`.
 
 ## 8. Logging & observability convention
 
-- Library: pino. Logger factory `log(name)` returns `pino.child({ module: name })`; names are `storyforge:<module>[:<sub>]`, e.g. `storyforge:manuscript:autosave`, `storyforge:ai:review`.
-- Correlation: middleware assigns `requestId` (incoming `x-request-id` or a new UUID), stored in AsyncLocalStorage and added to every log line; jobs carry `jobId` and the originating `requestId`.
-- Boundary lines: one `request` line per HTTP request (route, status, ms, userId); `ai.call` start/end (feature, model, effort, tokens, cache tokens, ms, stop_reason, anthropic request id); `job` start/end/fail; `autosave.conflict`; `quota.refused`.
-- Levels: `LOG_LEVEL` env (default `info`, `debug` locally). Destinations: stdout (JSON in prod, pretty in dev) and `logs/app.log` locally.
-- Privacy: never log manuscript or library text at any level; log ids, sizes and counts.
-- Health: `GET /api/health` → `{ version, db: "ok" | "error" }`.
+- pino; `log(name)` → child logger; names `storyforge:<module>[:<sub>]` (e.g. `storyforge:drafts:autosave`, `storyforge:ai:drafting`, `storyforge:cowriter:import`).
+- `requestId` from AsyncLocalStorage on every line (incoming `x-request-id` reused); jobs log `jobId` and the originating `requestId`.
+- Boundary events: `request` (route, status, ms, userId); `ai.call.start|end` (feature, model, effort, tokens, cache tokens, ms, stop_reason, anthropic_request_id); `job.start|progress|end|fail`; `proposal.created|accepted|rejected` (counts); `autosave.conflict`; `quota.refused`; `import.report` (counts, warnings).
+- `LOG_LEVEL` env (default `info`, `debug` locally); stdout (JSON in prod, pretty in dev) and `logs/app.log` locally.
+- Never log book text, research or library text; ids, sizes and counts only.
+- `GET /api/health` → `{ version, db }`.
 
 ## 9. Test strategy
 
 | Layer | Tool | Scope | In CI |
-|-------|------|-------|-------|
-| Unit | Vitest | pure domain logic, prompt assembly, diffing, anchoring | yes |
-| Integration | Vitest + Postgres (compose service / CI service container) | domain modules and handlers incl. ownership checks, FakeClaude | yes |
-| E2E | Playwright against `next build` + worker | core user flows, test auth provider, FakeClaude | yes |
-| Interactive dev checks | Playwright MCP / Claude in Chrome | exploratory UI checks during epics | no |
-| Claude evals | script `npm run eval:<feature>` | prompt/model quality on a fixed sample | no (manual, costs money) |
+|---|---|---|---|
+| Unit | Vitest | framework, id scheme, readiness maths, tuning ranges, texture measures (golden vs `texture.py`), brief assembly, parsers, diff | yes |
+| Integration | Vitest + Postgres | domain modules, ownership, proposals apply/undo, import/export round trip on fixture book, FakeClaude | yes |
+| E2E | Playwright vs `next build` + worker | core flows (see PRD §13) with FakeClaude | yes |
+| Interactive dev checks | Playwright MCP / Claude in Chrome | exploratory UI checks per epic | no |
+| Claude evals | `npm run eval:<feature>` | quality on fixed samples from the real book | no (manual, costs money) |
 
-Commands: `npm test` (unit + integration), `npm run test:e2e`, `npm run lint`, `npm run typecheck`.
+Fixture book: a reduced copy of a cowriter book (2 chapters, both languages, voices, plan, cards, research) committed under `tests/fixtures/cowriter-book/`, with personal content replaced where needed.
 
 ## 10. Environments
 
 | | Local | CI | Staging / prod |
-|-|-------|----|----------------|
-| App | `npm run dev` + `npm run worker` | built image | Docker image, `web` + `worker` processes |
-| Postgres | docker compose | service container | managed Postgres with PITR |
-| Storage | MinIO (compose) | MinIO | S3-compatible bucket |
-| Claude | FakeClaude by default; real key opt-in via `.env.local` | FakeClaude | real key from secret store |
-| Auth | email via console transport + test provider | test provider | email provider + Google OAuth |
+|---|---|---|---|
+| App | `npm run dev` + `npm run worker` | built image | Docker image, `web` + `worker` |
+| Postgres | docker compose | service container | managed, PITR |
+| Storage | MinIO | MinIO | S3-compatible bucket |
+| Claude | FakeClaude; real key opt-in | FakeClaude | real key from secret store |
+| Auth | console email + test provider | test provider | email provider + Google |
 
-Migrations: `drizzle-kit migrate` as a release step before the new web/worker start.
+Migrations: `drizzle-kit migrate` as a release step.

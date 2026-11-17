@@ -1,9 +1,11 @@
 schema: ps-spec
 
 context: |
-  Domain: storyforge, a hosted multi-user writing desk for authors - manuscript editor (project > chapter > scene),
-  private and public (shared between signed-in users) reference libraries, and Claude assistance (inline edit of a
-  selection, chapter structure review). Source of truth: PRD.md (FR-/NFR-/US- ids) and ARCHITECTURE.md.
+  Domain: storyforge, the hosted successor to cowriter (rafaxalv/cowriter): books move Concept > Chapters (plan of record)
+  > Scenes (scene cards) > Drafts (per narrator voice) > Manuscript, in voices on a fixed 31-dimension framework, in
+  several languages with shared paragraph ids. Private library = a book's research, characters + continuity, scenarios,
+  lexicon; public library = admin-curated public-domain reference books, style studies, texture profiles. Claude features
+  run as jobs producing proposals the author accepts. Keep cowriter vocabulary. Source of truth: PRD.md and ARCHITECTURE.md.
   Stack: TypeScript strict, Node 22, Next.js 15 App Router + React 19, TipTap 2, PostgreSQL 16 + Drizzle ORM,
   Auth.js v5 (email magic link + Google), Zod at every server boundary, pg-boss jobs, S3-compatible storage (MinIO locally),
   @anthropic-ai/sdk with model claude-opus-5-5 (model/effort per feature via env).
