@@ -6,7 +6,7 @@ Source: [PRD.md](PRD.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · Changes: `open
 
 **Status legend:** `todo` → `planned` (change artifacts done, CP3 pending/passed) → `in-progress` (on branch, coding) → `verifying` (running test-plan) → `review` (docs done, waiting for CP4) → `done` (archived + merged). `dropped` for epics descoped.
 
-**Reviewed:** — <!-- set to the date the human approved this epic list (CP2); clear it when epics change -->
+**Reviewed:** 2026-11-17
 
 **Assumptions** (from PRD §16, accepted at CP1)
 - A1: Claude usage is paid by the operator's API key with per-user monthly caps; no bring-your-own-key in v1.
