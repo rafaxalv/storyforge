@@ -6,17 +6,15 @@ Source: [PRD.md](PRD.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · Changes: `open
 
 **Status legend:** `todo` → `planned` (change artifacts done, CP3 pending/passed) → `in-progress` (on branch, coding) → `verifying` (running test-plan) → `review` (docs done, waiting for CP4) → `done` (archived + merged). `dropped` for epics descoped.
 
-**Reviewed:** 2026-11-17
+**Reviewed:** — <!-- set to the date the human approved this epic list (CP2); clear it when epics change -->
 
-**Assumptions** (from PRD §16, accepted at CP1)
-- A1: Claude usage is paid by the operator's API key with per-user monthly caps; no bring-your-own-key in v1.
-- A2: one author per project.
-- A3: public libraries are visible to signed-in users only.
-- A4: import/export formats are .docx and Markdown only.
-- PRD Q1 (notify borrowers on library change?) → decided in E06 planning; default: notify only on unpublish/hide.
-- PRD Q2 (whole-book review?) → chapters only in v1 (E07); whole-book is a later epic.
-- The admin role (`user.role`) is introduced in E01 so E06 moderation and E08 caps can rely on it.
-- M3 (editor) is kept as one epic; if planning shows > ~30 tasks, snapshots/history split off as a new epic appended at the end.
+**Assumptions**
+- This list replaces the first one (generic writing desk, reviewed 2026-11-17) after the PRD was reworked as the cowriter successor. No epic past E00 had been planned, so ids E01–E09 are reused with new meanings; from now on ids are never reused.
+- PRD A1–A6 apply (operator-paid Claude with caps; one author per book; admin-curated public library; cowriter skills as of 2026-11-17; fixed 31-dimension framework; web research, heatmap, chat panel, graph, PDF and translation tools after v1).
+- PRD Q1 (primary home after import) → default: storyforge becomes the book's home after import; re-import replaces a book after a warning, no merge in v1. Revisit in E07 planning.
+- PRD Q2 (Desk-only data: scene-review ticks, lab tests, chats) → not imported in v1; they live in the Desk's artifact store, not the repo.
+- Library and voices come before the plan (PRD milestone order M3–M5) because scene cards reference scenarios, characters and voice ranges.
+- E06 (draft editor) and E07 (import/export) are the largest epics. If planning shows > ~30 tasks, E06 splits off reader view + promote, and E07 splits export from import, each appended as a new epic at the end.
 
 ## Status board
 
@@ -24,14 +22,19 @@ Source: [PRD.md](PRD.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · Changes: `open
 |----|------|--------|------------|--------|-----|
 | E00 | Scaffolding & environment | `e00-scaffold` | — | todo | — |
 | E01 | Accounts & auth | `e01-auth` | E00 | todo | — |
-| E02 | Projects & outline | `e02-outline` | E01 | todo | — |
-| E03 | Manuscript editor | `e03-editor` | E02 | todo | — |
-| E04 | Private reference libraries | `e04-libraries` | E03 | todo | — |
-| E05 | Claude inline edit & usage metering | `e05-inline-edit` | E03 | todo | — |
-| E06 | Public libraries | `e06-public-libraries` | E04 | todo | — |
-| E07 | Claude structure review | `e07-structure-review` | E04, E05 | todo | — |
-| E08 | Usage caps & admin | `e08-usage-caps` | E05 | todo | — |
-| E09 | Import & export | `e09-import-export` | E03, E04 | todo | — |
+| E02 | Book profile & structure | `e02-book-profile` | E01 | todo | — |
+| E03 | Private library | `e03-private-library` | E02 | todo | — |
+| E04 | Voices & chapter writing styles | `e04-voices` | E03 | todo | — |
+| E05 | Chapter plan & scene cards | `e05-plan-scenes` | E03, E04 | todo | — |
+| E06 | Drafts & manuscript editor | `e06-draft-editor` | E04, E05 | todo | — |
+| E07 | Cowriter import & export | `e07-cowriter-io` | E06 | todo | — |
+| E08 | Claude foundation, inline edit & usage metering | `e08-ai-foundation` | E06 | todo | — |
+| E09 | Public library & voice lab | `e09-public-library-lab` | E04, E08 | todo | — |
+| E10 | Readiness & scene builder | `e10-scene-builder` | E05, E08 | todo | — |
+| E11 | Drafting | `e11-drafting` | E10 | todo | — |
+| E12 | Texture measures & rewrite to voice | `e12-texture-rewrite` | E06, E08 | todo | — |
+| E13 | Prose review | `e13-prose-review` | E11, E12 | todo | — |
+| E14 | Usage caps & admin | `e14-usage-caps` | E08 | todo | — |
 
 ## E00 — Scaffolding & environment
 
@@ -39,210 +42,279 @@ Source: [PRD.md](PRD.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · Changes: `open
 
 **User stories**
 - **US-1** As a developer, I want a one-command local setup (`docker compose up -d && npm install && npm run dev`), so that any session can start the app immediately.
-  - Acceptance: fresh clone → setup → run serves the app on localhost; steps documented in `doc/README.md`.
+  - Acceptance: fresh clone → setup → run serves the app on localhost; steps in `doc/README.md`.
   - Acceptance: `npm run worker` starts the pg-boss worker and logs that it is ready.
 - **US-2** As an AI agent or on-call human, I want a logging baseline, so that any feature can be debugged from its logs.
-  - Acceptance: `log(name)` returns a pino child logger named `storyforge:<module>`; `LOG_LEVEL` switches level; output goes to stdout and `logs/app.log` locally.
-  - Acceptance: every HTTP request produces one `request` log line with `requestId`, route, status and duration; an incoming `x-request-id` is reused.
+  - Acceptance: `log(name)` returns a pino child logger named `storyforge:<module>`; `LOG_LEVEL` switches level; stdout and `logs/app.log` locally; startup banner with version, env, level.
+  - Acceptance: every HTTP request logs one `request` line with `requestId`, route, status, duration; an incoming `x-request-id` is reused and returned.
 - **US-3** As an operator, I want `GET /api/health`, so that I can see the app version and whether the database is reachable.
-  - Acceptance: returns 200 `{version, db:"ok"}` with Postgres up and 503 `{db:"error"}` with it down.
+  - Acceptance: 200 `{version, db:"ok"}` with Postgres up; 503 `{db:"error"}` with it down.
 - **US-4** As a developer, I want a test harness and CI, so that every epic ships with green tests.
-  - Acceptance: `npm test` runs a unit and an integration (Postgres) example; `npm run test:e2e` runs a Playwright example; GitHub Actions runs lint, typecheck, tests and e2e on push.
-- **US-5** As a developer, I want the Claude seam in place, so that features never call the SDK directly and tests never hit the network.
-  - Acceptance: `src/server/ai/client.ts` exposes a client interface with a real implementation and `FakeClaude` that replays fixtures; tests use the fake by default.
+  - Acceptance: `npm test` runs unit + integration (Postgres) examples; `npm run test:e2e` runs a Playwright example; GitHub Actions runs lint, typecheck, tests, e2e on push.
+- **US-5** As a developer, I want the Claude seam and the framework constants in place, so that features never call the SDK directly and share one definition of the style framework.
+  - Acceptance: `src/server/ai/client.ts` exposes a client interface with a real implementation and `FakeClaude` replaying fixtures; tests use the fake by default.
+  - Acceptance: `src/shared/framework.ts` defines the tags and the 31 dimensions (groups A–G, poles, language-sensitive and scene-level sets) with a unit test.
 
-**Scope:** Next.js 15 + TS strict, ESLint/Prettier, Drizzle + first (empty) migration, docker compose (Postgres, MinIO), pino logger + request-id middleware (AsyncLocalStorage), pg-boss worker entrypoint, Vitest + Playwright, GitHub Actions, Dockerfile (web/worker roles), `.env.example`, Claude client seam + FakeClaude, `/api/health`.
-**Out of scope:** auth (E01), any product UI beyond a placeholder home page.
+**Scope:** Next.js 15 + TS strict, ESLint/Prettier, Drizzle + empty first migration, docker compose (Postgres, MinIO), pino + request-id middleware, pg-boss worker entrypoint, Vitest + Playwright, GitHub Actions, Dockerfile (web/worker), `.env.example`, Claude client seam + FakeClaude, framework constants, `/api/health`.
+**Out of scope:** auth (E01), any product UI beyond a placeholder page.
 **Depends on:** —
-**Notes:** PRD M0, NFR-3/NFR-4 baselines, ARCHITECTURE §2, §3 layout, §8, §9. Has behavior → spec capability `service-health` (health endpoint + request log line). Docker must be installed locally before this epic's tests can run.
+**Notes:** PRD M0; ARCHITECTURE §2, §3 layout, §8, §9. Behavior → capability `service-health` (health endpoint + request log line). Docker must be installed locally for this epic's tests.
 
 ## E01 — Accounts & auth
 
-**Goal:** authors can sign up, sign in and delete their account, and every server function knows who the actor is.
+**Goal:** authors can sign in and delete their account, and every server function knows who the actor is.
 
 **User stories**
-- **US-1** As an author, I want to sign in with an email magic link or Google, so that my work is tied to me.
-  - Acceptance: magic link email (console transport locally) signs the user in; Google OAuth signs in; session persists 30 days; sign-out works.
-  - Acceptance: signed-out users are redirected to sign-in from every app page.
-- **US-2** As an author, I want to set my display name and delete my account, so that I control my data.
-  - Acceptance: display name editable; deletion asks for confirmation, signs out, and a purge job removes all the user's rows.
-- **US-3** As a developer, I want `getActor()` and an ownership helper, so that every domain function enforces access the same way.
-  - Acceptance: domain functions without a valid actor throw `Unauthenticated`; accessing another user's row throws `Forbidden`; covered by an integration test pattern later epics copy.
-- **US-4** As an operator, I want an admin role set by config, so that moderation and caps can be restricted to admins.
-  - Acceptance: emails listed in `ADMIN_EMAILS` get `role=admin` on sign-in; `requireAdmin()` guards admin routes.
+- **US-1** As an author, I want to sign in with an email magic link or Google, so that my books are mine.
+  - Acceptance: magic link (console transport locally) and Google OAuth sign in; session lasts 30 days; sign-out works; app pages redirect signed-out users.
+- **US-2** As an author, I want to delete my account, so that I control my data.
+  - Acceptance: confirmation, sign-out, purge job removes every row and stored file of the user.
+- **US-3** As a developer, I want `getActor()`, ownership and admin helpers, so that every domain function enforces access the same way.
+  - Acceptance: no actor → `Unauthenticated`; another user's row → `Forbidden`; `ADMIN_EMAILS` grants `role=admin`; an integration-test pattern later epics copy.
 
-**Scope:** Auth.js v5 + Drizzle adapter, user table (name, role, monthly_token_cap nullable), sign-in/out pages, settings page, account purge job, test auth provider for e2e, auth rate limiting.
-**Out of scope:** account data export (E09), usage caps UI (E08).
+**Scope:** Auth.js v5 + Drizzle adapter, user table (role, monthly_token_cap), sign-in/out pages, settings page, account purge job, e2e test auth provider, auth rate limits.
+**Out of scope:** usage UI (E08, E14).
 **Depends on:** E00
-**Notes:** FR-1–3, FR-34 (role only), NFR-4. Capabilities: `auth-session`, `account-management`. Security rules: owasp-2025 (A01, A07), typescript.
+**Notes:** FR-1–3, NFR-4. Capabilities: `auth-session`, `account-management`.
 
-## E02 — Projects & outline
+## E02 — Book profile & structure
 
-**Goal:** an author can create projects and shape a book's structure of chapters and scenes.
+**Goal:** an author can create a book with its profile, languages, parts, chapters and Concept.
 
 **User stories**
-- **US-1** As an author, I want to create, rename and delete projects, so that each book has its own space.
-  - Acceptance: project list shows title, word count, last edited; delete is soft and recoverable for 30 days.
-- **US-2** As an author, I want to add, rename, delete and drag-reorder chapters and scenes (also moving scenes between chapters), so that the structure follows my outline.
-  - Acceptance: order persists after reload; keyboard reordering works; deleted nodes are recoverable from a trash view.
-- **US-3** As an author, I want to see word counts per scene, chapter and project and set a project target, so that I can track progress.
-  - Acceptance: counts update when scene text changes (seeded text until E03); target shows a progress bar.
+- **US-1** As an author, I want to create a book and edit its profile (title, one-liner, length target and limit, languages with the written-first flag, standing rules, truth labels, people notes, paragraph-ID scheme), so that every tool follows it.
+  - Acceptance: profile page with those fields; languages can be added/reordered; standing rules numbered and dated; default truth labels from cowriter (DOCUMENTED … FICTIONAL).
+- **US-2** As an author, I want parts and chapters with ids from the scheme (`01`, `00` prologue, `99` epilogue, `INT`) and a title per language, so that the book's shape is set.
+  - Acceptance: create, rename, reorder, remove (restorable); reordering never changes chapter ids; a book outline view.
+- **US-3** As an author, I want to write the Concept and open it beside other pages.
+  - Acceptance: rich-text Concept with autosave; side-panel view.
 
-**Scope:** project/chapter/scene tables and domain module, outline sidebar UI with drag-and-drop, trash/restore, purge job for expired soft deletes, word-count aggregation.
-**Out of scope:** scene text editing (E03), style sheet (E03).
+**Scope:** book, book_language, standing_rule, concept, part, chapter tables + domain module; book list, profile, outline and concept pages; `src/shared/id-scheme.ts`.
+**Out of scope:** plan items (E05), paragraphs (E06).
 **Depends on:** E01
-**Notes:** FR-4, FR-8, NFR-1 (outline < 1 s for 200k words), NFR-6. Capabilities: `project-management`, `manuscript-outline`.
+**Notes:** FR-4–6. Capabilities: `book-profile`, `book-structure`.
 
-## E03 — Manuscript editor
+## E03 — Private library
 
-**Goal:** an author can write scenes in a rich-text editor that never loses work and keeps a history.
+**Goal:** an author can keep a book's research, characters, continuity, scenarios and lexicon in storyforge.
 
 **User stories**
-- **US-1** As an author, I want a rich-text editor with paragraphs, headings, emphasis, block quotes, scene breaks and inline author notes, so that I can draft comfortably.
-  - Acceptance: TipTap editor with those nodes; author notes are visually distinct and excluded from word counts.
-- **US-2** As an author, I want automatic saving with visible status, so that I never lose work.
-  - Acceptance: saves within 2 s of the last keystroke; shows saving/saved/error; a failed save retries and is not dropped; reload shows the latest text.
-- **US-3** As an author, I want to be warned when the same scene was changed in another tab, so that I don't overwrite my own work.
-  - Acceptance: stale version save is rejected; UI offers reload or overwrite.
-- **US-4** As an author, I want to browse earlier versions of a scene and restore one.
-  - Acceptance: auto snapshots at most every 10 min while editing plus manual "save version"; preview and restore (restore itself creates a snapshot).
-- **US-5** As an author, I want a project style sheet (POV, tense, voice notes), so that Claude features can follow it later.
-  - Acceptance: style sheet editable in project settings and stored on the project.
+- **US-1** As an author, I want research documents in folders (Markdown edited in-app, PDFs and images uploaded) with truth labels, so that sources live with the book.
+  - Acceptance: folder tree; Markdown editor; PDF/image upload to object storage with preview; truth label per document; "cited by" list (filled once E05 lands).
+- **US-2** As an author, I want a Character Bible (characters by stage and group, bullets, chapter pointers, a speech-voice slot) and a Continuity record linked to paragraph ids.
+  - Acceptance: CRUD for characters and continuity facts by category; paragraph refs stored as ids (resolved to links once E06 lands).
+- **US-3** As an author, I want scenarios (place, period, spots, anachronism traps, established-in-text) and a colour script.
+  - Acceptance: CRUD; spots addressable as `scenario#spot` for scene cards.
+- **US-4** As an author, I want a Bilingual Lexicon with a term and reader note per book language.
+  - Acceptance: CRUD; ASCII key validated; lookup by key used later by footnotes.
 
-**Scope:** TipTap setup + custom nodes, scene doc/text/word_count/version columns, autosave client queue, optimistic concurrency, snapshots table and UI, style sheet form.
-**Out of scope:** entry mention links (E04), AI-assisted markers (E05).
+**Scope:** research_folder/research_doc, character, continuity_fact, scenario/scenario_spot, colour_script, lexicon_entry; library pages; upload handling with size and type limits.
+**Out of scope:** public library (E09); Claude help on scenarios or speech voices (after v1).
 **Depends on:** E02
-**Notes:** FR-5–7, FR-9–10, NFR-1, NFR-3, NFR-6. Capabilities: `scene-editor`, `scene-history`, `project-style-sheet`. Risk: largest epic; see Assumptions on splitting.
+**Notes:** FR-12–16, NFR-4 (upload safety). Capabilities: `research-library`, `character-bible`, `scenarios`, `bilingual-lexicon`.
 
-## E04 — Private reference libraries
+## E04 — Voices & chapter writing styles
 
-**Goal:** an author can keep structured reference material and see it beside the manuscript.
-
-**User stories**
-- **US-1** As an author, I want libraries with entries of type character, place, item, faction, event, note or source (title, aliases, rich body, tags, custom fields), so that I can organise my world and research.
-  - Acceptance: CRUD for libraries and entries; custom fields as key/value rows.
-- **US-2** As an author, I want to search and filter entries by text, type and tag, so that I find things fast.
-  - Acceptance: Postgres full-text search over title, aliases, body; results in < 300 ms for 2,000 entries.
-- **US-3** As an author, I want to attach libraries to a project and open entries in a side panel while writing.
-  - Acceptance: attach/detach from project settings; side panel lists and searches attached entries without leaving the editor.
-- **US-4** As an author, I want to link a mention in my text to an entry, so that I can jump to it.
-  - Acceptance: `@` menu in the editor inserts an entry mention; clicking opens it in the side panel.
-
-**Scope:** library/library_entry/project_library tables, library pages, entry editor (reusing TipTap), search, side panel, mention node.
-**Out of scope:** publishing and browsing public libraries (E06), export (E09).
-**Depends on:** E03 (side panel and mention node live in the editor)
-**Notes:** FR-11–14. Capabilities: `reference-library`, `library-search`, `project-libraries`.
-
-## E05 — Claude inline edit & usage metering
-
-**Goal:** an author can ask Claude to rework a selected passage and accept or reject the result as a diff; every Claude call is metered.
+**Goal:** an author can define voices on the 31-dimension framework and set each chapter's voice and tuning.
 
 **User stories**
-- **US-1** As an author, I want to select text and choose rewrite, tighten, expand, change tone, fix grammar or a custom instruction, so that I get a focused suggestion.
-  - Acceptance: actions available from a selection toolbar and keyboard shortcut for selections of 1–4,000 words.
-- **US-2** As an author, I want the suggestion to stream in as a word diff that I can accept, reject or retry, so that I stay in control of my text.
-  - Acceptance: first tokens < 3 s p95 (real model); accept replaces the selection as one undo step and is marked AI-assisted in the scene history; retry accepts an extra instruction.
-- **US-3** As an author, I want Claude to follow my style sheet and the surrounding text.
-  - Acceptance: prompt includes style sheet and ≤ ~2,000 words of context; author notes excluded; verified by prompt-assembly unit tests.
-- **US-4** As an author, I want to see my Claude usage this month.
-  - Acceptance: settings shows tokens used by feature this month.
-- **US-5** As an operator, I want every Claude call recorded, so that cost is visible.
-  - Acceptance: `ai_usage` row per call with tokens, cache tokens, model, cost estimate and Anthropic request id; refusals and errors logged and shown as retryable messages.
+- **US-1** As an author, I want to create and edit voices (id with the `NARR-`/`AUTHOR-`/`BASE-`/`CHAR-…-SPEECH`/`DOC-` scheme, type, tags, 31 dimensions with base/min/max/note), so that a voice is defined exactly as in cowriter.
+  - Acceptance: framework-driven editor (groups A–G, pole labels, range bands); validation base within min–max, 1–5.
+- **US-2** As an author, I want rule sets, the Texture section and one language layer per book language (references, offsets ±1 on 4/5/6/7/11 only, vocabulary, phrase-building, address, literacy markers, language rules, texture targets, reference paragraph).
+  - Acceptance: offsets outside ±1 or on other dimensions are rejected; texture targets table keyed by cowriter's measure labels.
+- **US-3** As an author, I want voices versioned with a change log, so that paragraphs can say which version wrote them.
+  - Acceptance: saving a change creates a version; history list with diffs of dimensions.
+- **US-4** As an author, I want to set each chapter's voice in use and, per voice, its tuning, reason, status and texture overrides.
+  - Acceptance: sliders limited to the voice's range; outside requires a reason; 19/20/27–30 read-only at chapter level; switching the voice keeps every voice's settings; characters can be linked to speech voices.
+- **US-5** As an author, I want a book Author Library (reference authors with 31 scores, reasons, portrait).
+  - Acceptance: CRUD; link to a public author is optional until E09.
 
-**Scope:** `ai.call()` wrapper (logging, metering, error mapping, refusal handling, server-side fallbacks), inline-edit prompt + SSE route, selection toolbar, diff view, ai_usage table, user usage view, eval script for inline edit.
-**Out of scope:** caps enforcement (E08), structure review (E07).
-**Depends on:** E03
-**Notes:** FR-20–23, FR-29, FR-31 (user view), NFR-2, NFR-5, NFR-9. ARCHITECTURE §7: `claude-opus-5-5`, effort low, streaming. Capabilities: `ai-inline-edit`, `ai-usage-metering`. Security rules: ai-security (prompt injection via manuscript text).
+**Scope:** voice, voice_version, chapter_style, chapter_voice_setting, author_library_entry; voices index page, voice editor, chapter writing style panel.
+**Out of scope:** blending and Claude tests (E09); texture measurement (E12).
+**Depends on:** E03 (speech voices link to characters)
+**Notes:** FR-17–21, A5. Capabilities: `voices`, `chapter-writing-style`, `author-library`.
 
-## E06 — Public libraries
+## E05 — Chapter plan & scene cards
 
-**Goal:** authors can publish libraries and other authors can find, read, attach or copy them.
-
-**User stories**
-- **US-1** As a worldbuilder, I want to publish a library with title, description, optional cover and licence, and unpublish it later.
-  - Acceptance: publish/unpublish toggle; cover uploaded to object storage; unpublishing removes it from browse and makes live attachments unavailable with an in-app notice to borrowers.
-- **US-2** As a borrower, I want to browse and search public libraries and read their entries.
-  - Acceptance: browse page with search by title, description, tags and author; library page lists entries; private libraries never appear.
-- **US-3** As a borrower, I want to attach a public library to my project (live, read-only) or copy it into a private library, so that I can use it while writing.
-  - Acceptance: attached public entries appear read-only in the side panel; copy creates an editable private library owned by the borrower.
-- **US-4** As any user I want to report a library, and as an admin I want to hide or restore reported libraries.
-  - Acceptance: report form with reason; admin queue; hidden libraries behave as unpublished for everyone but the owner.
-
-**Scope:** visibility/licence/cover fields, publish flow, browse/search pages, attach-public and copy flows, report table and admin moderation page, borrower notices.
-**Out of scope:** public web (signed-out) access (assumption A3), change notifications beyond unpublish/hide (PRD Q1).
-**Depends on:** E04
-**Notes:** FR-15–19, FR-34 (moderation), NFR-4, NFR-5. Capabilities: `public-libraries`, `library-moderation`. Risk: cross-user data exposure; integration tests for every visibility rule.
-
-## E07 — Claude structure review
-
-**Goal:** an author can get a structured review of a chapter's structure and work through the findings.
+**Goal:** an author can keep each chapter's plan of record and its scene cards in storyforge.
 
 **User stories**
-- **US-1** As an author, I want to request a review of a chapter and keep writing while it runs.
-  - Acceptance: request returns immediately; review runs in the worker; UI shows queued/running/done/failed; ≤ 10k-word chapter completes < 2 min p95 (real model).
-- **US-2** As an author, I want findings by category (pacing, scene turn, plant without payoff, payoff without plant, arc, POV/tense, clarity, other) and severity, each tied to a scene with explanation and suggestion.
-  - Acceptance: structured output validated against the schema; invalid output fails the review with a logged reason, never partial garbage.
-- **US-3** As an author, I want to click a finding to jump to the quoted passage and mark findings resolved or dismissed.
-  - Acceptance: quote anchoring highlights the passage, falls back to the scene when the quote no longer exists; state persists.
-- **US-4** As an author, I want the review to use my attached libraries and earlier chapters, and to re-run it after revising.
-  - Acceptance: prompt includes referenced entries and earlier-chapter context within budget; cached prefix reused on re-runs (cache read tokens > 0 logged); old reviews stay readable.
+- **US-1** As an author, I want a chapter plan with When / where, Readiness line, and ordered Stories, Facts, Notes and Sources items, so that the plan is my plan of record.
+  - Acceptance: items editable in place; numbering (`3.`, `3.2`) and "How the chapter runs" first; facts with truth label, to-verify, cited sources; sources S1… linking to research docs; change origin recorded.
+- **US-2** As an author, I want a panel of what is left to organise.
+  - Acceptance: lists facts with no source or label, items to verify, sources nobody cites.
+- **US-3** As an author, I want scene cards with the cowriter card fields and the six scene parameters.
+  - Acceptance: card editor; Covers picks plan items and beats; Scenario picks a spot or marks `(missing)`; Characters picks Bible entries with their speech voice; out-of-range values for 19/20/27–30 require a reason; cards reorder and renumber `N.k`.
 
-**Scope:** review/review_finding tables, review job handler, prompt builder with cache breakpoints and earlier-chapter summaries, JSON-schema structured output, findings panel UI, anchoring, eval script for reviews.
-**Out of scope:** whole-book review (PRD Q2), continuity checks (post-v1).
+**Scope:** plan_item, scene_card tables; chapter plan page, scenes page, side panel with Concept and research.
+**Out of scope:** Readiness scoring and building cards with Claude (E10).
+**Depends on:** E03, E04
+**Notes:** FR-7–11. Capabilities: `chapter-plan`, `scene-cards`.
+
+## E06 — Drafts & manuscript editor
+
+**Goal:** an author can write and revise chapter drafts per voice, in every language, without ever losing an edit, and read the manuscript as a book.
+
+**User stories**
+- **US-1** As an author, I want to edit a chapter's draft paragraph by paragraph (select, then edit), in one language or side by side, with ids, foldable scene separators, add below, remove/restore, review status and scene review ticks.
+  - Acceptance: ids follow the scheme incl. letter suffixes; keyboard flow (Tab, Enter, Enter, Escape); first scene open, others folded.
+- **US-2** As an author, I want drafts per narrator voice with a first text and a revised text, so that I can switch voices without losing either.
+  - Acceptance: voice switch shows that voice's draft; "revised" marks paragraphs differing from the first text.
+- **US-3** As an author, I want autosave that never loses an edit, conflict detection and history.
+  - Acceptance: save ≤ 2 s after typing; per-paragraph+language version check; failed saves retried and kept across reload; conflict shows both texts; history with restore.
+- **US-4** As an author, I want footnotes from the Lexicon, and to promote an approved draft into the manuscript.
+  - Acceptance: `[^key]` markers resolve to the paragraph language's note; promote copies paragraphs with ids, keeps the previous manuscript in history.
+- **US-5** As an author, I want a reader view (pages, font and size, page count, footnotes as symbols per page, scene breaks as a centred dash).
+  - Acceptance: matches cowriter's Book tab behaviour on a fixture chapter.
+
+**Scope:** draft, draft_version, paragraph, paragraph_text, paragraph_history, scene_review, manuscript container; draft page, reader page; client save queue.
+**Out of scope:** Claude edits (E08+), .docx export (E07).
 **Depends on:** E04, E05
-**Notes:** FR-24–28, NFR-2, NFR-9. ARCHITECTURE §4 (background path), §7 (effort high, structured output, caching). Capabilities: `ai-structure-review`. Uses `narrative` categories from the PRD; prompt quality validated with the eval set before CP4.
+**Notes:** FR-25–30, NFR-1, NFR-3, NFR-7. Capabilities: `draft-editor`, `manuscript`, `reader-view`. Largest UI epic; see Assumptions on splitting.
 
-## E08 — Usage caps & admin
+## E07 — Cowriter import & export
 
-**Goal:** the operator can bound Claude cost per user and see usage across users.
+**Goal:** an existing cowriter book moves into storyforge faithfully and can be exported back.
+
+**User stories**
+- **US-1** As an author, I want to import a cowriter book from a zip or from the GitHub repo and path, with a dry run first, so that I can move grandgrandfather in.
+  - Acceptance: dry-run report with counts per area, warnings and unparsed sections (kept as notes); commit creates the book; paragraph ids preserved; zip limits and path checks enforced.
+- **US-2** As an author, I want to export a book to the cowriter layout and a chapter or the manuscript to .docx.
+  - Acceptance: export of the fixture book re-imports with no differences in supported fields (round-trip test); .docx keeps headings, emphasis, scene breaks, footnotes.
+- **US-3** As an operator, I want to import a cowriter repo's `library/` into the public library.
+  - Acceptance: admin-only; authors, books (text, source, translator, PD status), STYLE.md and TEXTURE.md imported (stored now, shown in E09).
+
+**Scope:** parsers for BOOK.md, concept, chapters files, scenes, scenarios, characters + continuity, research, voice files + index + chapter settings + author library + lexicon + shared rules, drafts, manuscript, paragraph parameters; exporters; GitHub fetch with the user's token (not stored); fixture book under `tests/fixtures/cowriter-book/`.
+**Out of scope:** merging a re-import into edited data (Q1 default: replace with warning); Desk-only data (Q2).
+**Depends on:** E06
+**Notes:** FR-39–41, NFR-6. Capabilities: `cowriter-import`, `cowriter-export`. Risk: format variance; see Assumptions on splitting.
+
+## E08 — Claude foundation, inline edit & usage metering
+
+**Goal:** the machinery every Claude feature uses exists and is proven by inline edit.
+
+**User stories**
+- **US-1** As a developer, I want `ai.call()`, the brief builder, the Claude job runner and the proposal model, so that later features only add prompts and mappings.
+  - Acceptance: jobs with progress over SSE and cancel; proposals with typed items, accept/reject per item, apply in one transaction with undo; brief builder with cache breakpoints (cache reads logged); refusals and fallbacks handled.
+- **US-2** As an author, I want to select text and ask Claude to rewrite, tighten, expand, change tone, fix grammar or follow a custom instruction, and accept or reject a streamed diff.
+  - Acceptance: 1–4,000 words; first tokens < 3 s p95 (real model); accept = one undo step, recorded as `ai:inline-edit` in paragraph history.
+- **US-3** As an author and operator, I want every Claude call recorded and my month's usage visible.
+  - Acceptance: `ai_usage` row per call; usage page per feature.
+
+**Scope:** ai/client, ai/brief, ai/proposals, job_run, proposal tables, proposal review UI, inline-edit route + UI, ai_usage + user usage view, `eval:inline-edit` script.
+**Out of scope:** caps (E14).
+**Depends on:** E06
+**Notes:** FR-34, FR-42, NFR-2, NFR-4 (prompt injection), ARCHITECTURE §4, §7. Capabilities: `ai-proposals`, `ai-inline-edit`, `ai-usage-metering`.
+
+## E09 — Public library & voice lab
+
+**Goal:** authors can draw on curated reference authors to build voices and test them with Claude.
+
+**User stories**
+- **US-1** As an operator, I want to manage public authors, books, style studies and texture profiles.
+  - Acceptance: admin pages; PD status incl. "BR only"; in-copyright authors without text.
+- **US-2** As an author, I want to browse and read the public library and add an author to my book's Author Library.
+  - Acceptance: search by name and language; style study and texture profile readable; add copies scores and links the study.
+- **US-3** As an author, I want the voice lab: choose authors with weights, Blend (weighted base, ranges ±1), adjust, draft rules with Claude, and generate test paragraphs from a chapter's plan in one or both languages.
+  - Acceptance: blend maths unit-tested; tests stored and comparable side by side; Claude rules arrive as a proposal; tests never enter drafts.
+
+**Scope:** public_author, public_book, style_study, texture_profile (UI over data imported in E07), voice lab page, `voice-lab-test` and `voice-rules` features.
+**Out of scope:** downloading books from the web (after v1).
+**Depends on:** E04, E08
+**Notes:** FR-22–24. Capabilities: `public-library`, `voice-lab`.
+
+## E10 — Readiness & scene builder
+
+**Goal:** Claude scores a chapter's readiness and builds its scene cards from the plan, under the author's approval.
+
+**User stories**
+- **US-1** As an author, I want Claude to score Readiness with the six-parameter rubric and explain the weakest parameters.
+  - Acceptance: weights 25/20/10/15/15/15; voice ≤ 2 and total ≤ 79 when tuning is not settled; Readiness line written on accept.
+- **US-2** As an author, I want scene cards built automatically or through a brainstorm, with the review report.
+  - Acceptance: refuses below 60; asks questions on weakest parameters at 60–79; report lists story lines covered/thin/missing, checks, narrative review at card level; shape fixes applied, story and plan changes as proposals accepted one by one.
+
+**Scope:** `readiness` and `scene-builder` features (prompts from cowriter's readiness.md and scene-builder skill), brainstorm step UI, report view.
+**Out of scope:** research lookups (non-goal).
+**Depends on:** E05, E08
+**Notes:** FR-31–32. Capabilities: `ai-readiness`, `ai-scene-builder`.
+
+## E11 — Drafting
+
+**Goal:** Claude writes a chapter draft from its scene cards in the chapter's voice, in every language.
+
+**User stories**
+- **US-1** As an author, I want a chapter draft written from its cards and covered plan items, in the voice, tuning and texture, natively in each book language (written-first language first).
+  - Acceptance: paragraphs with ids per scheme, scene markers, footnote markers for lexicon terms; arrives as a proposal; accept creates the voice's first text (and revised text); progress per scene; cancel keeps nothing.
+- **US-2** As an author, I want drafting to refuse when the chapter is not ready.
+  - Acceptance: requires cards and a settled tuning; clear message otherwise.
+
+**Scope:** `drafting` feature, per-scene generation steps, assembly into paragraphs, eval set from grandgrandfather material.
+**Out of scope:** translation of existing text (after v1).
+**Depends on:** E10
+**Notes:** FR-33. Capability: `ai-drafting`.
+
+## E12 — Texture measures & rewrite to voice
+
+**Goal:** the texture of a chapter is measured against its voice, and Claude can rewrite paragraphs to the chapter's tuning.
+
+**User stories**
+- **US-1** As an author, I want a texture check of a chapter's narration per language against the voice's targets moved by the chapter tuning, with pattern-cap counts.
+  - Acceptance: TypeScript port of `texture.py` measures, `TARGET_LABELS`, `TUNING_SHIFTS`; golden tests match the Python outputs on fixture texts; report marks measures out of range.
+- **US-2** As an author, I want Apply to chapter / paragraph to rewrite paragraphs written before the current tuning, in every language, with what changed, what to check, and Undo.
+  - Acceptance: one proposal item per paragraph streamed as it lands; stop keeps done items; applied tuning recorded on each paragraph.
+
+**Scope:** `src/server/texture`, texture report UI, `apply-tuning` feature.
+**Out of scope:** heatmap (after v1).
+**Depends on:** E06, E08
+**Notes:** FR-35, FR-38. Capabilities: `texture-check`, `ai-apply-tuning`.
+
+## E13 — Prose review
+
+**Goal:** Claude reviews a written chapter as cowriter's review chain does, and the author applies what they accept.
+
+**User stories**
+- **US-1** As an author, I want a sense-and-flow review with the smallest fix per finding (move, merge, cut, bridge, rewrite).
+  - Acceptance: findings table with ids, words, before/after; accepted fixes applied in every language; moved paragraphs keep their ids.
+- **US-2** As an author, I want a chapter prose review: map vs scene cards, scenarios, plot and continuity, rules, dialogue voices, voice coherence, languages, rhythm, texture report, narrative review, paragraph suggestions and proposed Continuity facts.
+  - Acceptance: report sections as in cowriter; each item accept/reject; accepted paragraph changes update text and paragraph parameters together; accepted facts go to the Continuity record.
+
+**Scope:** `sense-and-flow` and `prose-review` features (chapter pass + paragraph passes), report UI, eval set.
+**Out of scope:** engagement heatmap, chat panel.
+**Depends on:** E11, E12
+**Notes:** FR-36–37. Capabilities: `ai-sense-and-flow`, `ai-prose-review`.
+
+## E14 — Usage caps & admin
+
+**Goal:** the operator bounds Claude cost per user and sees usage across users.
 
 **User stories**
 - **US-1** As an operator, I want a default monthly token cap and per-user overrides.
-  - Acceptance: `AI_DEFAULT_MONTHLY_TOKENS` env default; admin can set an override per user.
-- **US-2** As an author, I want to be told clearly when I have reached my cap, so that I know why Claude is unavailable.
-  - Acceptance: inline edit and review requests over cap are refused before calling Claude with a message showing the reset date; in-flight requests finish; refusals by Claude don't count.
-- **US-3** As an operator, I want a usage page per user and feature for the current and previous months.
-  - Acceptance: admin page lists users with tokens and estimated cost; sortable.
+  - Acceptance: env default; admin override per user.
+- **US-2** As an author, I want a clear refusal when I hit my cap, before anything runs.
+  - Acceptance: refused before calling Claude with the reset date; running jobs finish; refusals by Claude don't count.
+- **US-3** As an operator, I want a usage page per user and feature.
+  - Acceptance: current and previous month, tokens and estimated cost, sortable.
 
-**Scope:** quota check in `ai.call()` path and review enqueue, admin usage page, cap override UI, `quota.refused` log line.
-**Out of scope:** payments/plans (non-goal).
-**Depends on:** E05
-**Notes:** FR-30, FR-31 (admin), FR-34 (caps), NFR-8. Capability: `ai-usage-caps`.
-
-## E09 — Import & export
-
-**Goal:** authors can bring an existing manuscript in and take their work out.
-
-**User stories**
-- **US-1** As an author, I want to import a .docx or Markdown manuscript, split into chapters and scenes, with a preview before it is created.
-  - Acceptance: Heading 1 → chapter; `***`, `#` or Heading 2 → scene; preview shows the structure and word counts; confirm creates a new project.
-- **US-2** As an author, I want to export a project to .docx and Markdown, with author notes excluded.
-  - Acceptance: export job produces a downloadable file; formatting (headings, emphasis, scene breaks) preserved.
-- **US-3** As an author, I want to export a library to Markdown (one file per entry, zipped).
-  - Acceptance: zip download with front matter for type, tags and fields.
-
-**Scope:** mammoth-based docx import, Markdown parser, preview UI, export jobs (docx, md, zip) via worker and object storage, download links.
-**Out of scope:** other formats (assumption A4), account-wide data export beyond projects and libraries.
-**Depends on:** E03, E04
-**Notes:** FR-32–33, NFR-5 (users can take their data). Capabilities: `manuscript-import`, `content-export`.
+**Scope:** quota check in job enqueue and inline edit, admin usage page, `quota.refused` log line.
+**Depends on:** E08
+**Notes:** FR-43, NFR-9. Capability: `ai-usage-caps`.
 
 ## Dependency graph
 
 ```
-E00 → E01 → E02 → E03 ─┬→ E04 ─┬→ E06
-                       │       ├→ E07
-                       │       └→ E09
-                       └→ E05 ─┬→ E07
-                               └→ E08
+E00 → E01 → E02 → E03 → E04 → E05 → E06 ─┬→ E07
+                                          └→ E08 ─┬→ E09   (also needs E04)
+                                                  ├→ E10   (also needs E05) → E11 ─┐
+                                                  ├→ E12   (also needs E06) ───────┴→ E13
+                                                  └→ E14
 ```
 
 ## Parallelization
 
 | Wave | Epics | Notes |
 |------|-------|-------|
-| 1 | E00 | must finish first |
-| 2 | E01 | |
-| 3 | E02 | |
-| 4 | E03 | |
-| 5 | E04, E05 | independent once E03 is done |
-| 6 | E06, E07, E08, E09 | E06, E09 need E04; E08 needs E05; E07 needs both |
+| 1–7 | E00 → E01 → E02 → E03 → E04 → E05 → E06 | data model and editor, in order |
+| 8 | E07, E08 | import/export and the Claude foundation, independent |
+| 9 | E09, E10, E12, E14 | all need E08 |
+| 10 | E11 | needs E10 |
+| 11 | E13 | needs E11 + E12 |

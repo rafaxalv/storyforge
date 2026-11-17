@@ -240,16 +240,16 @@ Structured JSON logs (pino) with a request id (and job id) on every line; one li
 
 ## 16. Milestones
 
-Each milestone becomes one epic and one OpenSpec change.
+Each milestone becomes one epic and one OpenSpec change. Library and voices come before the plan because scene cards reference scenarios, characters and voice ranges.
 
 | # | Milestone | Covers | Acceptance |
 |---|---|---|---|
 | M0 | Scaffolding & environment | Next.js + TS, Postgres + Drizzle, compose, pino + request ids, worker, Vitest + Playwright, CI, Dockerfile, Claude seam + FakeClaude, `/api/health` | One-command local run; health endpoint; CI green; logs carry request ids |
 | M1 | Accounts & auth | US-1–2; FR-1–3 | Sign-in, ownership helper, account deletion, admin role by config |
 | M2 | Book profile & structure | US-3–4; FR-4–6 | Book with profile, languages, parts, chapters, Concept |
-| M3 | Chapter plan & scene cards | US-5–7; FR-7–11 | Plan items with labels/sources, left-to-organise panel, scene cards editor with range checks |
-| M4 | Private library | US-9–11; FR-12–16 | Research docs and files, Character Bible + Continuity, scenarios, Lexicon |
-| M5 | Voices & chapter writing styles | US-12, US-14; FR-17–21 | Voice editor on the framework, versions, language layers, chapter voice + tuning |
+| M3 | Private library | US-9–11; FR-12–16 | Research docs and files, Character Bible + Continuity, scenarios, Lexicon |
+| M4 | Voices & chapter writing styles | US-12, US-14; FR-17–21 | Voice editor on the framework, versions, language layers, chapter voice + tuning |
+| M5 | Chapter plan & scene cards | US-5–7; FR-7–11 | Plan items with labels/sources, left-to-organise panel, scene cards editor with range checks |
 | M6 | Drafts & manuscript editor | US-17–21; FR-25–30 | Paragraph editor, side by side, drafts per voice, autosave/conflicts/history, promote, reader view, footnotes |
 | M7 | Cowriter import & export | US-29–30; FR-39–41; NFR-6 | grandgrandfather imports with a clean report; export round-trips; .docx export |
 | M8 | Claude foundation, inline edit & usage metering | US-24, US-31 (user view); FR-34, FR-42 | ai.call wrapper, brief builder, job runner for Claude features, inline edit with diff, metering |
