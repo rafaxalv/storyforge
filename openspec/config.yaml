@@ -1,0 +1,74 @@
+schema: ps-spec
+
+context: |
+  Domain: storyforge, a hosted multi-user writing desk for authors - manuscript editor (project > chapter > scene),
+  private and public (shared between signed-in users) reference libraries, and Claude assistance (inline edit of a
+  selection, chapter structure review). Source of truth: PRD.md (FR-/NFR-/US- ids) and ARCHITECTURE.md.
+  Stack: TypeScript strict, Node 22, Next.js 15 App Router + React 19, TipTap 2, PostgreSQL 16 + Drizzle ORM,
+  Auth.js v5 (email magic link + Google), Zod at every server boundary, pg-boss jobs, S3-compatible storage (MinIO locally),
+  @anthropic-ai/sdk with model claude-opus-5-5 (model/effort per feature via env).
+  Deploy: one Docker image with two roles (web, worker), managed Postgres; local = docker compose (Postgres, MinIO) + npm run dev / npm run worker.
+  Conventions: only src/server/<module> touches the DB or Claude; every domain function takes `actor` and enforces ownership;
+  user text in prompts is delimited and treated as data, never instructions.
+  Logging: pino via log(name) -> child logger, names storyforge:<module>[:<sub>]; requestId from AsyncLocalStorage on every line;
+  jobs carry jobId + originating requestId; LOG_LEVEL env (debug locally); never log manuscript or library text.
+  Tests: Vitest unit + integration (real Postgres), Playwright e2e; Claude replaced by FakeClaude replaying tests/fixtures/claude/.
+  Commands: npm test, npm run test:e2e, npm run lint, npm run typecheck.
+
+# Project context (optional)
+# Add only constraints that should guide OpenSpec artifacts and workflows.
+# Include constraints an agent cannot infer by reading the code.
+# Keep general project documentation and discoverable codebase facts out.
+# Example:
+#   context: |
+#     Designs and tasks must cover Windows, macOS, and Linux
+#     Write all artifacts in Spanish
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always state what is out of scope
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
+
+# --- ps-spec (managed by ps-spec-init.sh; edit freely, the script won't overwrite an existing block) ---
+rules:
+  proposal:
+    - "Name the epic (E0N) this change implements and copy its user stories; every change maps to exactly one EPICS.md epic"
+  design:
+    - "Include an Observability section (logger names, boundary log lines, correlation ids, DEBUG switch)"
+    - "Include a Security section - if .claude/rules/security/ exists, name the rule files that apply to this change and how each is honoured (input validation, authn/authz, secrets, injection, data exposure); otherwise list the threats this change introduces and their mitigations, or `n/a` with a reason"
+  tasks:
+    - "End with three groups in this order - Observability, Tests, Docs - each task saying how it is verified"
+    - "The Tests group verifies every item of the design.md Security section (an automated test or an interactive case each)"
+    - "Tick each task `- [x]` the moment it lands, not at the end of the epic"
+  test-plan:
+    - "Every spec scenario maps to at least one automated test or interactive case"
+    - "Every interactive case names its tool (playwright | chrome | http | console | manual)"
+    - "Include observability checks - log lines that must be visible while the cases run"
+operations:
+  apply:
+    guidance:
+      - "Never code on main - work on the epic/<change-name> branch created in the code phase"
+      - "Logging is part of the feature - implement the design.md Observability section alongside the code"
+      - "Mark each task `- [x]` in tasks.md as it lands and commit per task group as `<type>(<change-name>): ...`"
+      - "When all tasks are checked, run test-plan.md and record results before asking for human review"
+  archive:
+    guidance:
+      - "Archive only after the human review gate - test-plan all pass, the feature doc is final, the docs index is updated, and the user said OK"
+      - "After archiving, merge the epic branch into main with --no-ff, tag it, delete the branch, and set the epic to done in EPICS.md"

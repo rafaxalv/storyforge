@@ -1,0 +1,4 @@
+source=https://github.com/TikiTribe/claude-secure-coding-rules
+commit=f644d86
+date=2026-11-17
+packs=core,typescript,react,docker,github-actions,ai-security
