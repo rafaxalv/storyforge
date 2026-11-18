@@ -1,0 +1,11 @@
+node_modules
+.next
+dist
+src/server/db/migrations
+openspec
+.claude
+package-lock.json
+*.md
+openspec
+doc
+.github
