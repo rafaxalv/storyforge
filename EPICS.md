@@ -6,7 +6,7 @@ Source: [PRD.md](PRD.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · Changes: `open
 
 **Status legend:** `todo` → `planned` (change artifacts done, CP3 pending/passed) → `in-progress` (on branch, coding) → `verifying` (running test-plan) → `review` (docs done, waiting for CP4) → `done` (archived + merged). `dropped` for epics descoped.
 
-**Reviewed:** — <!-- set to the date the human approved this epic list (CP2); clear it when epics change -->
+**Reviewed:** 2026-11-18
 
 **Assumptions**
 - This list replaces the first one (generic writing desk, reviewed 2026-11-17) after the PRD was reworked as the cowriter successor. No epic past E00 had been planned, so ids E01–E09 are reused with new meanings; from now on ids are never reused.
