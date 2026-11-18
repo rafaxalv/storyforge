@@ -20,7 +20,7 @@ Source: [PRD.md](PRD.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · Changes: `open
 
 | ID | Epic | Change | Depends on | Status | Doc |
 |----|------|--------|------------|--------|-----|
-| E00 | Scaffolding & environment | `e00-scaffold` | — | todo | — |
+| E00 | Scaffolding & environment | `e00-scaffold` | — | planned | [scaffold.md](doc/scaffold.md) |
 | E01 | Accounts & auth | `e01-auth` | E00 | todo | — |
 | E02 | Book profile & structure | `e02-book-profile` | E01 | todo | — |
 | E03 | Private library | `e03-private-library` | E02 | todo | — |
