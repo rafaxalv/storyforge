@@ -1,0 +1,5 @@
+{
+  "content": [{ "type": "text", "text": "Hello from FakeClaude." }],
+  "stop_reason": "end_turn",
+  "usage": { "input_tokens": 12, "output_tokens": 5 }
+}
