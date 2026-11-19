@@ -27,7 +27,7 @@ Result (2026-11-19): lint, typecheck, Prettier clean; `npm test` 10 files / 37 t
 | T4 | service-health: Incoming id is reused / replaced | 1. `curl -si -H 'x-request-id: abc-123' localhost:3000/api/health` 2. same with `x-request-id: bad id!` | 1: response `x-request-id: abc-123` and log lines with `requestId":"abc-123"`. 2: a new generated id in the header and logs | http | pass |
 | T5 | service-health: Log level switch | Restart dev server with `LOG_LEVEL=warn`, request `/api/health` | No `request` line written; then with `LOG_LEVEL=debug` debug lines appear (static assets, `ai.client` when a feature picks the client) | console | pass (production build; after the clean-up the active Claude client is in the `startup` line as `ai`) |
 | T6 | service-health: Worker starts / cannot reach DB | 1. `npm run worker` with Postgres up, then Ctrl-C 2. `DATABASE_URL=postgres://x:y@127.0.0.1:1/z npm run worker` | 1: `startup` (role worker), `worker.ready`, then `worker.stop` on Ctrl-C. 2: `worker.start.failed` error and exit code ≠ 0 | console | pass (1: startup → worker.start → worker.ready → worker.stop SIGINT. 2: covered by `worker-failure.test.ts`) |
-| T7 | E00/US-4: CI | Push `epic/e00-scaffold` (with the author's OK) and open the Actions run, or run `act` locally if not pushing | lint, typecheck, unit+integration, e2e and docker build jobs all green | manual | todo (needs the author's OK to push) |
+| T7 | E00/US-4: CI | Push `epic/e00-scaffold` (with the author's OK) and open the Actions run, or run `act` locally if not pushing | lint, typecheck, unit+integration, e2e and docker build jobs all green | manual | pass (2026-11-19, run 44580097527: `check` 1m26s and `image` 56s green) |
 | T8 | Packaging: image runs both roles | 1. `docker build -t storyforge:e00 .` 2. `docker run --rm -e ROLE=web -e DATABASE_URL=… --network host storyforge:e00` 3. curl health 4. same with `ROLE=worker` | Web answers `/api/health` 200 and logs JSON (production); worker logs `worker.ready`; `docker inspect` shows a non-root user and a healthcheck | console | pass (run on the compose network with `--read-only --cap-drop=ALL --security-opt=no-new-privileges`: web 200 `db:"ok"`, container `healthy`, uid 1000 `node`, no `x-powered-by`; worker `worker.ready`; `node dist/migrate.js` applies migrations. First run failed: Next tried to install TypeScript for `next.config.ts` → fixed with `next.config.mjs`) |
 | T9 | Errors caught by Next.js are logged with the request id | Temporary route that throws (removed afterwards); `curl -H 'x-request-id: probe-1'` it in dev | 500; `request.error` (error, with `err`) and `request` (status 500) lines, both with `requestId` probe-1 | console | pass |
 
@@ -44,7 +44,7 @@ Result (2026-11-19): lint, typecheck, Prettier clean; `npm test` 10 files / 37 t
 ## Exit criteria
 
 - [x] Automated tests green (`npm run lint && npm run typecheck && npm test && npm run test:e2e`)
-- [ ] All interactive cases `pass` (T7 may be done by the human reviewer if the branch is not pushed)
+- [x] All interactive cases `pass` (T7 may be done by the human reviewer if the branch is not pushed)
 - [x] Observability checks visible
 - [x] Security items from design.md each covered by a passing test or case (env fail-closed, generic errors, redaction, request-id validation, non-root/digest-pinned image, SHA-pinned CI with read-only token)
 - [x] No known regressions (first epic: n/a)

@@ -121,7 +121,7 @@ See the quick-start table in [README.md](README.md#quick-start). In short: `dock
 - The image is ~1 GB (mostly Next.js's production dependencies); slimming, BuildKit cache mounts and CI caching (Playwright browser, `.next/cache`, Docker layers) are possible later.
 - `npm audit` shows 20 advisories in dev-only tooling (ESLint/Vitest glob libraries, drizzle-kit's esbuild); production dependencies have none (`postcss` overridden to 8.5.33).
 - Homebrew's Compose is the standalone `docker-compose`; the docs say `docker compose`.
-- CI has not run yet (T7): it runs when `epic/e00-scaffold` is pushed.
+- First CI run green (2026-11-19, run 44580097527).
 
 ## References
 

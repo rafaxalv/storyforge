@@ -25,7 +25,7 @@
 ## 5. Packaging and CI
 
 - [x] 5.1 Add the multi-stage `Dockerfile` (digest-pinned `node:22-alpine`, non-root, Next build output + esbuild-bundled server/worker (no standalone, see design.md §13), `ROLE` switch, `HEALTHCHECK`) and `.dockerignore`; verify `docker build` succeeds and `docker run` with `ROLE=web` answers `/api/health`
-- [ ] 5.2 Add `.github/workflows/ci.yml` (push + pull_request, `permissions: contents: read`, SHA-pinned actions, Postgres service, npm ci, lint, typecheck, unit + integration, Playwright e2e, docker build); verify the workflow passes on the pushed epic branch (or with `act` if not pushed)
+- [x] 5.2 Add `.github/workflows/ci.yml` (push + pull_request, `permissions: contents: read`, SHA-pinned actions, Postgres service, npm ci, lint, typecheck, unit + integration, Playwright e2e, docker build); verify the workflow passes on the pushed epic branch (or with `act` if not pushed)
 
 ## 6. Observability
 
@@ -40,7 +40,7 @@
 - [x] 7.3 Integration tests for the worker scenarios (ready with DB, exit non-zero without DB) by spawning the worker process; verify green
 - [x] 7.4 Security checks: env validation fails closed without leaking values; 500 response body is generic; redaction removes cookie and authorization; ESLint forbids `any`; a script check that compose ports bind to 127.0.0.1, Dockerfile runs as non-root and uses digest-pinned images, and CI actions are SHA-pinned with `contents: read`; verify all green
 - [x] 7.5 Playwright e2e: home page loads and the response has an `x-request-id` header; `/api/health` returns 200 against the built app; verify `npm run test:e2e` green
-- [ ] 7.6 Run the full suite and every row of test-plan.md; record results in test-plan.md; verify all rows `pass`
+- [x] 7.6 Run the full suite and every row of test-plan.md; record results in test-plan.md; verify all rows `pass`
 
 ## 8. Docs
 
