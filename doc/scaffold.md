@@ -5,7 +5,7 @@ change: e00-scaffold
 status: draft            # draft while the epic is in flight, final at close
 updated: 2026-11-18
 # --- findability: keep these lists exact; agents grep them ---
-files: [package.json, next.config.ts, tsconfig.json, drizzle.config.ts, docker-compose.yml, Dockerfile, .dockerignore, .env.example, .github/workflows/ci.yml, src/server/main.ts, src/server/env.ts, src/server/log.ts, src/server/db/client.ts, src/server/ai/client.ts, src/shared/framework.ts, src/worker.ts, src/app/api/health/route.ts, tests/]
+files: [package.json, next.config.mjs, tsconfig.json, drizzle.config.ts, docker-compose.yml, Dockerfile, .dockerignore, .env.example, .github/workflows/ci.yml, src/server/main.ts, src/server/env.ts, src/server/log.ts, src/server/db/client.ts, src/server/ai/client.ts, src/shared/framework.ts, src/worker.ts, src/app/api/health/route.ts, tests/]
 entrypoints: ["GET /api/health", "npm run dev", "npm run start", "npm run worker", "npm run db:migrate", "npm test", "npm run test:e2e"]
 loggers: []              # filled at doc phase from the code
 events: []               # filled at doc phase from the code
