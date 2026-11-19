@@ -48,6 +48,16 @@ E00 left a runnable app: a custom Node server around Next.js 15, `startProcess(r
    - Integration: real Better Auth against `storyforge_test` using the `outbox` transport (request link → read file → open link via `auth.handler`), Better Auth's `testUtils` plugin in a test-only auth instance for creating signed-in users fast; access pattern tests; rate-limit test; deletion + purge job run in-process.
    - E2E (Playwright): sign-in through the outbox folder, settings rename, sign-out, delete account, redirect when signed out.
    - Google: unit-tested config (button shown/hidden); a real Google sign-in is a `manual` row needing credentials.
+16. *Changed during code (2026-11-19):*
+   - **Tests sign in for real** through the HTTP handler and the outbox (`tests/integration/auth-helpers.ts`: `signIn`, `twoUsers`); Better Auth's `testUtils` plugin is not used.
+   - **E2E sends email over real SMTP** to a local sink (`smtp-server` + `mailparser`, dev-only) started in Playwright's global setup, because production rightly refuses the `outbox` transport. This also covers the SMTP transport end to end.
+   - **Display name default:** magic-link sign-ups have no name; a `user.create.before` hook sets the email's local part (`defaultName`). The `auth.sign_in` event has no `newUser` field; new accounts log `auth.user.created`.
+   - **Purge:** unused sign-in links are deleted in `afterDelete` (they are keyed by email), so the `account.purge` job payload carries only the user id. E01 registers no purge steps; later epics add theirs.
+   - **No `/delete-user` rate rule:** deletion goes through our server action (typed confirmation + fresh session), which calls `auth.api` directly and is not rate limited by Better Auth's HTTP layer.
+   - **`auth.rate_limited`:** Better Auth answers 429 without logging; `handleAuthRequest()` wraps its handler and logs it.
+   - **Client address:** the request boundary sets `x-storyforge-client-ip` from the socket on every request; Better Auth reads only that header, so spoofed `X-Forwarded-For` doesn't escape the limit.
+   - **Two fixes in the E00 runtime found here:** dev servers build into `.next-dev` (`next.config.mjs` `distDir`) so they can't overwrite the production build in `.next`; and `next()` now gets this server's `hostname`/`port` — Next fetches server-action redirect targets from itself and defaulted to `localhost:3000`.
+   - **Error reason:** Better Auth reports used and expired links alike as `INVALID_TOKEN`; `auth.link.invalid` logs reason `invalid` (or `expired` if it ever says so).
 
 ## Observability
 

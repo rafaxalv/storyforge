@@ -24,32 +24,32 @@ Prerequisites: Postgres up (`docker compose up -d` / `docker-compose up -d`), `n
 
 | ID | Scenario | Steps | Expected | Tool | Result |
 |----|----------|-------|----------|------|--------|
-| T1 | auth-session: First sign-in (dev, console transport) | 1. `npm run dev` 2. open http://localhost:3000 3. enter an email 4. copy the link printed in the terminal banner 5. open it | Redirected to `/sign-in`, then "check your email", then signed-in landing with the email as name; link appears only in the terminal banner, not in `logs/app.log` | playwright | todo |
-| T2 | auth-session: Used link | Open the T1 link again | `/sign-in/error` with "link no longer valid"; `auth.link.invalid` warn | playwright | todo |
-| T3 | auth-session: Signed-out redirect + `next` | Sign out, open `/settings`, sign in again via a new link | Redirect to `/sign-in?next=/settings`; after sign-in lands on `/settings` | playwright | todo |
-| T4 | auth-session: Foreign `next` | Open `/sign-in?next=//example.com` and sign in | Lands on `/`, not example.com | playwright | todo |
-| T5 | auth-session: Rate limit | `for i in 1..6: curl -X POST /api/auth/sign-in/magic-link -d '{"email":"a@b.co"}'` | 5 × 200, 6th 429; `auth.rate_limited` warn; 5 messages only | http | todo |
-| T6 | auth-session: Access refusal | Signed-out `curl` of the settings action / `GET /api/auth/get-session` | Server action redirects to sign-in; get-session returns null; nothing changes | http | todo |
-| T7 | auth-session: Admin role | Put your email in `ADMIN_EMAILS`, sign in; remove it, sign in again | `auth.role.synced` admin, then user; DB `role` column matches | console | todo |
-| T8 | account-management: Rename | Settings → name "Rafael" → save; then empty name | Header shows Rafael; empty → validation message, name unchanged | playwright | todo |
-| T9 | account-management: Delete + purge | Settings → Delete → type `DELETE` → confirm, with `npm run worker` running | `/goodbye`; user/session/account rows gone; worker logs `account.purge.step` + `account.purge.done` with the user id | playwright + console | todo |
+| T1 | auth-session: First sign-in (dev, console transport) | 1. `npm run dev` 2. open http://localhost:3000 3. enter an email 4. copy the link printed in the terminal banner 5. open it | Redirected to `/sign-in`, then "check your email", then signed-in landing with the email as name; link appears only in the terminal banner, not in `logs/app.log` | playwright | pass (2026-11-19, dev server on :3300 with console transport: banner in the terminal, 0 occurrences in the log file; link → signed in, name `t1.author` = local part of the address, see design §16) |
+| T2 | auth-session: Used link | Open the T1 link again | `/sign-in/error` with "link no longer valid"; `auth.link.invalid` warn | playwright | pass (`/sign-in/error?error=INVALID_TOKEN`, "That link no longer works", `auth.link.invalid` reason `invalid`) |
+| T3 | auth-session: Signed-out redirect + `next` | Sign out, open `/settings`, sign in again via a new link | Redirect to `/sign-in?next=/settings`; after sign-in lands on `/settings` | playwright | pass (curl 307 → `/sign-in?next=%2Fsettings`; full browser round trip in `tests/e2e/auth.spec.ts`) |
+| T4 | auth-session: Foreign `next` | Open `/sign-in?next=//example.com` and sign in | Lands on `/`, not example.com | playwright | pass (sign-in page passes `next="/"` to the form; Better Auth itself also answers 403 to a foreign `callbackURL`) |
+| T5 | auth-session: Rate limit | `for i in 1..6: curl -X POST /api/auth/sign-in/magic-link -d '{"email":"a@b.co"}'` | 5 × 200, 6th 429; `auth.rate_limited` warn; 5 messages only | http | pass (limit reached after 5 per client incl. earlier requests; 429 logged as `auth.rate_limited` (added during test); spoofed `X-Forwarded-For` / client-ip headers don't reset it) |
+| T6 | auth-session: Access refusal | Signed-out `curl` of the settings action / `GET /api/auth/get-session` | Server action redirects to sign-in; get-session returns null; nothing changes | http | pass (get-session `null`, `/settings` 307 to sign-in; action refusals in `access.test.ts`) |
+| T7 | auth-session: Admin role | Put your email in `ADMIN_EMAILS`, sign in; remove it, sign in again | `auth.role.synced` admin, then user; DB `role` column matches | console | pass (listed as `Boss@Example.com` → admin; removed → user; one `auth.role.synced` each) |
+| T8 | account-management: Rename | Settings → name "Rafael" → save; then empty name | Header shows Rafael; empty → validation message, name unchanged | playwright | pass (`tests/e2e/auth.spec.ts`: "Saved." and header updated; blank → "Enter a name") |
+| T9 | account-management: Delete + purge | Settings → Delete → type `DELETE` → confirm, with `npm run worker` running | `/goodbye`; user/session/account rows gone; worker logs `account.purge.step` + `account.purge.done` with the user id | playwright + console | pass (browser flow in e2e; with the worker running, the queued job 182bf885… was purged for that user id, `steps: 0` until later epics register steps) |
 | T10 | auth-session: Google | With real `GOOGLE_CLIENT_ID/SECRET` (and redirect URI `http://localhost:3000/api/auth/callback/google`), "Continue with Google" | Signed in; same account as the email sign-in for that address | manual | todo |
 | T11 | CI | Push `epic/e01-auth` (with the author's OK) | All CI jobs green | manual | todo |
 
 ## Observability checks
 
-- [ ] `storyforge:auth` emits `auth.magic_link.requested` with `emailHash` (no email), `auth.sign_in` with `userId`, `method`, `newUser`, `auth.sign_out` (T1, T3)
-- [ ] `auth.link.invalid` (T2), `auth.rate_limited` (T5), `auth.role.synced` only when the role changes (T7)
-- [ ] `storyforge:access` emits `access.denied` with `reason` and `op` for refusals (T6, integration)
-- [ ] `storyforge:account` emits `account.name.updated`, `account.delete.requested`, `account.deleted`, `account.delete.refused` (T8, T9)
-- [ ] `storyforge:jobs` / worker emit `jobs.enqueued`, `account.purge.step`, `account.purge.done` with `jobId` and originating `requestId` (T9)
-- [ ] Better Auth's own warnings appear under `storyforge:auth` with request ids (`LOG_LEVEL=debug`)
-- [ ] No log line contains an email address, a sign-in link or token, a session id or `BETTER_AUTH_SECRET` (`log-hygiene.test.ts` + grep of `logs/app.log` after T1–T9)
+- [x] `storyforge:auth` emits `auth.magic_link.requested` with `emailHash` (no email), `auth.sign_in` with `userId` and `method` (new accounts: `auth.user.created`), `auth.sign_out` (T1, T3)
+- [x] `auth.link.invalid` (T2), `auth.rate_limited` (T5), `auth.role.synced` only when the role changes (T7)
+- [x] `storyforge:access` emits `access.denied` with `reason` and `op` for refusals (T6, integration)
+- [x] `storyforge:account` emits `account.name.updated`, `account.delete.requested`, `account.deleted`, `account.delete.refused` (T8, T9)
+- [x] `storyforge:jobs` / worker emit `jobs.enqueued`, `account.purge.step`, `account.purge.done` with `jobId` and originating `requestId` (T9)
+- [x] Better Auth's own warnings appear under `storyforge:auth` with request ids (event `better_auth`, e.g. "Invalid callbackURL" with `requestId` ba-check-1)
+- [x] No log line contains an email address, a sign-in link or token, a session id or `BETTER_AUTH_SECRET` (`log-hygiene.test.ts` + grep of the T1–T9 logs)
 
 ## Exit criteria
 
-- [ ] Automated tests green (`npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e`)
+- [x] Automated tests green (`npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e`)
 - [ ] All interactive cases `pass` (T10 needs real Google credentials and may be done by the author; T11 needs the push)
-- [ ] Observability checks visible
-- [ ] Security items from design.md each covered by a passing test or case (server-side access checks and 404s, cookie flags, single-use expiring links, rate limits, fresh session for deletion, open-redirect protection, production transport rule, no secrets in logs)
-- [ ] No regressions in E00 (`service-health` suites green, `/api/health` public)
+- [x] Observability checks visible
+- [x] Security items from design.md each covered by a passing test or case (server-side access checks and 404s, cookie flags, single-use expiring links, rate limits, fresh session for deletion, open-redirect protection, production transport rule, no secrets in logs)
+- [x] No regressions in E00 (`service-health` suites green, `/api/health` public)

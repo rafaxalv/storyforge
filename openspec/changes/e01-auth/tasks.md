@@ -25,11 +25,11 @@
 
 - [x] 5.1 `updateDisplayName(actor, userId, name)` domain function + settings form server action (Zod 1–80 chars, trimmed); verify integration tests incl. another user's id → Forbidden
 - [x] 5.2 Delete-account dialog (typed `DELETE`) + server action (re-checks confirmation, requires fresh session, calls Better Auth deleteUser, signs out, redirects to `/goodbye`); verify integration + e2e
-- [ ] 5.3 Job queue client `src/server/jobs/queue.ts`, queue names, purge registry `src/server/jobs/purge.ts`, `account.purge` handler registered in `src/worker.ts`, E01 purge step (leftover verification rows); verify integration test runs the job in-process and the worker picks it up in a manual run
+- [x] 5.3 Job queue client `src/server/jobs/queue.ts`, queue names, purge registry `src/server/jobs/purge.ts`, `account.purge` handler registered in `src/worker.ts`, E01 purge step (leftover verification rows); verify integration test runs the job in-process and the worker picks it up in a manual run
 
 ## 6. Observability
 
-- [ ] 6.1 Add the loggers and events from design.md (auth, mail, account, jobs, access), the HMAC `emailHash`, Better Auth logger bridge and extra redaction paths; verify each event in a manual run and that no email, link, token or secret appears in `logs/app.log`
+- [x] 6.1 Add the loggers and events from design.md (auth, mail, account, jobs, access), the HMAC `emailHash`, Better Auth logger bridge and extra redaction paths; verify each event in a manual run and that no email, link, token or secret appears in `logs/app.log`
 
 ## 7. Tests
 
