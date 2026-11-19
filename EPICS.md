@@ -72,7 +72,7 @@ Source: [PRD.md](PRD.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · Changes: `open
 - **US-3** As a developer, I want `getActor()`, ownership and admin helpers, so that every domain function enforces access the same way.
   - Acceptance: no actor → `Unauthenticated`; another user's row → `Forbidden`; `ADMIN_EMAILS` grants `role=admin`; an integration-test pattern later epics copy.
 
-**Scope:** Auth.js v5 + Drizzle adapter, user table (role, monthly_token_cap), sign-in/out pages, settings page, account purge job, e2e test auth provider, auth rate limits.
+**Scope:** Better Auth + Drizzle adapter (changed from Auth.js v5 on 2026-11-19: still beta), user table (role, monthly_token_cap), sign-in/out pages, settings page, account purge job, e2e sign-in through an email outbox folder, auth rate limits.
 **Out of scope:** usage UI (E08, E14).
 **Depends on:** E00
 **Notes:** FR-1–3, NFR-4. Capabilities: `auth-session`, `account-management`.

@@ -19,7 +19,7 @@ Status: draft v2 for review · 2026-11-17 · companion to [PRD.md](PRD.md)
 | Rich text | TipTap 2 (ProseMirror) | Concept, research notes, rules, character entries; paragraph editor uses a lighter TipTap instance per paragraph |
 | Database | PostgreSQL 16 | Relational book model, JSONB for flexible sub-structures, full-text search, job queue |
 | ORM / migrations | Drizzle ORM + drizzle-kit | Typed SQL, SQL migrations in the repo |
-| Auth | Auth.js v5 (Drizzle adapter), email magic link + Google | Self-hosted sessions |
+| Auth | Better Auth 1.7 (Drizzle adapter, magic-link plugin, Google provider) | Self-hosted sessions in Postgres; stable release line (Auth.js v5 was still beta in Nov 2026) |
 | Validation | Zod at every boundary (inputs, Claude structured outputs, import parsers) | One schema for checks and types |
 | Background jobs | pg-boss | Claude features, import/export, purges; retries; cancel |
 | Object storage | S3-compatible (MinIO locally) | Research PDFs/images, public-library texts, import/export zips |
@@ -243,6 +243,6 @@ Fixture book: a reduced copy of a cowriter book (2 chapters, both languages, voi
 | Postgres | docker compose | service container | managed, PITR |
 | Storage | MinIO | MinIO | S3-compatible bucket |
 | Claude | FakeClaude; real key opt-in | FakeClaude | real key from secret store |
-| Auth | console email + test provider | test provider | email provider + Google |
+| Auth | email to console or an outbox folder (`EMAIL_TRANSPORT`) | outbox folder, read by e2e | SMTP email + Google |
 
 Migrations: `drizzle-kit migrate` as a release step.

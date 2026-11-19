@@ -222,7 +222,7 @@ Structured JSON logs (pino) with a request id (and job id) on every line; one li
 
 ## 14. Dependencies, models, licensing
 
-- Next.js, React, TipTap/ProseMirror, Drizzle, PostgreSQL, Auth.js, Zod, pino, pg-boss, Vitest, Playwright, a Markdown parser (remark/unified) for import/export, `docx` for .docx export.
+- Next.js, React, TipTap/ProseMirror, Drizzle, PostgreSQL, Better Auth, Zod, pino, pg-boss, Vitest, Playwright, a Markdown parser (remark/unified) for import/export, `docx` for .docx export.
 - Claude via `@anthropic-ai/sdk`, default `claude-opus-5-5` for every feature; effort per feature (low for inline edit, high for drafting and reviews) and model per feature configurable by env.
 - Public library texts are public domain (US and BR, or marked "BR only"); in-copyright authors are represented only by measurements and scores, never text.
 
