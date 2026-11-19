@@ -1,5 +1,6 @@
 checkpoints:
   plan: { approved: 2026-11-19, notes: "approved as presented (Better Auth chosen by the author)" }
+  validate: { approved: 2026-11-19, notes: "approved; CI green on db86392 (run 44602358504); T10 real Google sign-in left to the author" }
 review:
   done: 2026-11-19
   findings: "9 code-review + 24 simplify (4 angles, deduped to ~16)"

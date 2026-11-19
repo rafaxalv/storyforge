@@ -111,7 +111,7 @@ All roles share one environment: the web server, the worker and `node dist/migra
 - **Tools:**
   - `http` (curl with `Origin` and `content-type: application/json` for POSTs).
   - `console` for the worker.
-  - `playwright` for flows; recipes in `openspec/changes/e01-auth/test-plan.md`.
+  - `playwright` for flows; recipes in `openspec/changes/archive/2026-11-19-e01-auth/test-plan.md`.
 
 ## How to run & test
 
@@ -130,6 +130,6 @@ All roles share one environment: the web server, the worker and `node dist/migra
 
 ## References
 
-- Behavior contract: `openspec/specs/auth-session/spec.md`, `openspec/specs/account-management/spec.md` (after archive)
-- Change: `openspec/changes/e01-auth/` (→ `openspec/changes/archive/<date>-e01-auth/` after close)
+- Behavior contract: `openspec/specs/auth-session/spec.md`, `openspec/specs/account-management/spec.md`
+- Change: `openspec/changes/archive/2026-11-19-e01-auth/`
 - PRD: FR-1–3, NFR-4, NFR-5; ARCHITECTURE.md §2 (Auth), §6 (Security)
