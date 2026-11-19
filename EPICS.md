@@ -21,7 +21,7 @@ Source: [PRD.md](PRD.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · Changes: `open
 | ID | Epic | Change | Depends on | Status | Doc |
 |----|------|--------|------------|--------|-----|
 | E00 | Scaffolding & environment | `e00-scaffold` | — | done | [scaffold.md](doc/scaffold.md) |
-| E01 | Accounts & auth | `e01-auth` | E00 | planned | [auth.md](doc/auth.md) |
+| E01 | Accounts & auth | `e01-auth` | E00 | review | [auth.md](doc/auth.md) |
 | E02 | Book profile & structure | `e02-book-profile` | E01 | todo | — |
 | E03 | Private library | `e03-private-library` | E02 | todo | — |
 | E04 | Voices & chapter writing styles | `e04-voices` | E03 | todo | — |

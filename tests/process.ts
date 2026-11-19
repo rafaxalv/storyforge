@@ -8,14 +8,20 @@ export interface Spawned {
   exit: Promise<number | null>;
 }
 
-/** Runs a TypeScript entrypoint with tsx in production log mode (JSON lines on stdout). */
+/**
+ * Runs a TypeScript entrypoint with tsx as NODE_ENV=test (JSON log lines on stdout), with
+ * the test run's auth and email settings and only the variables given in `env` besides.
+ */
 export function spawnTs(entry: string, env: Record<string, string>): Spawned {
   const child = spawn(process.execPath, ["--import", "tsx", entry], {
     env: {
       PATH: process.env.PATH ?? "",
-      NODE_ENV: "production",
+      NODE_ENV: "test",
       LOG_LEVEL: "info",
       LOG_FILE: "",
+      BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? "",
+      EMAIL_TRANSPORT: process.env.EMAIL_TRANSPORT ?? "outbox",
+      MAIL_OUTBOX_DIR: process.env.MAIL_OUTBOX_DIR ?? "",
       ...env,
     },
     stdio: ["ignore", "pipe", "pipe"],

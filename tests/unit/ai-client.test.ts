@@ -11,6 +11,7 @@ import { parseEnv } from "@/server/env";
 import { captureLogs } from "../helpers";
 
 const DB = "postgres://u:p@127.0.0.1:5432/db";
+const SECRET = "x".repeat(32);
 
 const params = {
   model: DEFAULT_MODEL,
@@ -23,16 +24,23 @@ describe("Claude seam", () => {
 
   it("defaults to FakeClaude", () => {
     captureLogs();
-    expect(getClaude(parseEnv({ DATABASE_URL: DB })).kind).toBe("fake");
-    expect(() => parseEnv({ DATABASE_URL: DB, AI_CLIENT: "something-else" })).toThrow(/AI_CLIENT/);
+    expect(getClaude(parseEnv({ BETTER_AUTH_SECRET: SECRET, DATABASE_URL: DB })).kind).toBe("fake");
+    expect(() =>
+      parseEnv({ BETTER_AUTH_SECRET: SECRET, DATABASE_URL: DB, AI_CLIENT: "something-else" }),
+    ).toThrow(/AI_CLIENT/);
   });
 
   it("uses the real client only when asked, and requires a key", () => {
     captureLogs();
-    expect(() => parseEnv({ DATABASE_URL: DB, AI_CLIENT: "anthropic" })).toThrow(
-      /ANTHROPIC_API_KEY/,
-    );
-    const env = parseEnv({ DATABASE_URL: DB, AI_CLIENT: "anthropic", ANTHROPIC_API_KEY: "sk-x" });
+    expect(() =>
+      parseEnv({ BETTER_AUTH_SECRET: SECRET, DATABASE_URL: DB, AI_CLIENT: "anthropic" }),
+    ).toThrow(/ANTHROPIC_API_KEY/);
+    const env = parseEnv({
+      BETTER_AUTH_SECRET: SECRET,
+      DATABASE_URL: DB,
+      AI_CLIENT: "anthropic",
+      ANTHROPIC_API_KEY: "sk-x",
+    });
     expect(getClaude(env)).toBeInstanceOf(AnthropicClaude);
   });
 

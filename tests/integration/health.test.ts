@@ -1,12 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { closeDb } from "@/server/db/client";
-import { captureLogs, testDatabaseUrl } from "../helpers";
+import { captureLogs, testDatabaseUrl, withDatabaseUrl } from "../helpers";
 
 describe("service-health: Database reachable", () => {
-  beforeAll(async () => {
-    await closeDb();
-    process.env.DATABASE_URL = testDatabaseUrl();
-  });
+  beforeAll(() => withDatabaseUrl(testDatabaseUrl()));
   afterAll(() => closeDb());
 
   it("responds 200 with version and db ok", async () => {

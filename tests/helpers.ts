@@ -1,5 +1,6 @@
 import { Writable } from "node:stream";
-import { loadEnv } from "@/server/env";
+import { closeDb } from "@/server/db/client";
+import { loadEnv, resetEnvForTests } from "@/server/env";
 import { createRootLogger, setRootLogger, type Logger } from "@/server/log";
 import type { LevelWithSilent } from "pino";
 
@@ -30,5 +31,14 @@ export function testDatabaseUrl(): string {
   return url;
 }
 
-/** A Postgres URL where nothing listens (port 1 on loopback). */
-export const UNREACHABLE_DB_URL = "postgres://nobody:nothing@127.0.0.1:1/none";
+export { UNREACHABLE_DB_URL } from "./constants";
+
+/**
+ * Points the app at another database: sets DATABASE_URL, forgets the validated env and
+ * closes the pool, so the next getPool()/getEnv() use the new URL.
+ */
+export async function withDatabaseUrl(url: string): Promise<void> {
+  process.env.DATABASE_URL = url;
+  resetEnvForTests();
+  await closeDb();
+}

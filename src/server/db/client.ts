@@ -1,5 +1,6 @@
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import pg from "pg";
+import { getEnv } from "../env";
 import { log } from "../log";
 import { peekProcessSingleton, processSingleton, setProcessSingleton } from "../singleton";
 import * as schema from "./schema";
@@ -27,14 +28,11 @@ export function createPool(connectionString: string): pg.Pool {
   return pool;
 }
 
-// One pool per process, shared by the custom server and Next's route bundles.
-// TODO(E01): read the URL from the validated env (getEnv) once tests stop switching
-// databases through process.env.
+// One pool per process, shared by the custom server and Next's route bundles, built from
+// the validated env. Tests switch databases with withDatabaseUrl() (tests/helpers.ts).
 function holder(): DbHolder {
   return processSingleton("db", () => {
-    const url = process.env.DATABASE_URL;
-    if (!url) throw new Error("DATABASE_URL is not set");
-    const pool = createPool(url);
+    const pool = createPool(getEnv().DATABASE_URL);
     return { pool, db: drizzle(pool, { schema }) };
   });
 }

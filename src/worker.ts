@@ -1,8 +1,12 @@
 import { PgBoss } from "pg-boss";
+import { requestContext } from "@/server/context";
+import { QUEUES } from "@/server/jobs/names";
+import { PurgePayload, runPurge } from "@/server/jobs/purge";
+import { ensureQueues } from "@/server/jobs/queue";
 import { log } from "@/server/log";
 import { onShutdown, startProcess } from "@/server/startup";
 
-/** Worker role: runs background jobs from the pg-boss queue (no queues registered yet). */
+/** Worker role: runs background jobs from the pg-boss queue. */
 async function main(): Promise<void> {
   const env = startProcess("worker");
   const logger = log("worker");
@@ -13,6 +17,7 @@ async function main(): Promise<void> {
 
   try {
     await boss.start();
+    await ensureQueues(boss);
   } catch (err) {
     logger.error(
       { event: "worker.start.failed", err },
@@ -20,7 +25,18 @@ async function main(): Promise<void> {
     );
     process.exit(1);
   }
-  logger.info({ event: "worker.ready" }, "worker ready for jobs");
+
+  // Each job runs in a request context carrying the job id and the originating request id,
+  // so its log lines can be followed back to the request that queued it.
+  await boss.work(QUEUES.accountPurge, async ([job]) => {
+    if (!job) return;
+    const { userId, requestId } = PurgePayload.parse(job.data);
+    await requestContext.run({ requestId: requestId ?? job.id, jobId: job.id }, () =>
+      runPurge(userId),
+    );
+  });
+
+  logger.info({ event: "worker.ready", queues: Object.values(QUEUES) }, "worker ready for jobs");
 
   onShutdown(logger, "worker.stop", () => boss.stop({ graceful: true, timeout: 10_000 }));
 }

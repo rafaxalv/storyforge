@@ -48,6 +48,17 @@ E00 left a runnable app: a custom Node server around Next.js 15, `startProcess(r
    - Integration: real Better Auth against `storyforge_test` using the `outbox` transport (request link → read file → open link via `auth.handler`), Better Auth's `testUtils` plugin in a test-only auth instance for creating signed-in users fast; access pattern tests; rate-limit test; deletion + purge job run in-process.
    - E2E (Playwright): sign-in through the outbox folder, settings rename, sign-out, delete account, redirect when signed out.
    - Google: unit-tested config (button shown/hidden); a real Google sign-in is a `manual` row needing credentials.
+16. *Changed during code (2026-11-19):*
+   - **Tests sign in for real** through the HTTP handler and the outbox (`tests/integration/auth-helpers.ts`: `signIn`, `twoUsers`); Better Auth's `testUtils` plugin is not used.
+   - **E2E sends email over real SMTP** to a local sink (`smtp-server` + `mailparser`, dev-only) started in Playwright's global setup, because production rightly refuses the `outbox` transport. This also covers the SMTP transport end to end.
+   - **Display name default:** magic-link sign-ups have no name; a `user.create.before` hook sets the email's local part (`defaultName`). The `auth.sign_in` event has no `newUser` field; new accounts log `auth.user.created`.
+   - **Purge:** the job is queued in `beforeDelete` with a 60 s delay, so a queue failure stops the deletion instead of leaving data nobody purges; `runPurge` skips (`account.purge.skipped`) if the account still exists. Unused sign-in links are deleted in `afterDelete` (keyed by email), so the payload carries only the user id. E01 registers no purge steps; later epics add theirs. (Review & clean-up.)
+   - **Deletion only through the server action:** Better Auth's HTTP `/delete-user` routes are disabled (`disabledPaths`), so the typed confirmation can't be skipped; freshness is Better Auth's own `freshAge` check (`SESSION_EXPIRED` → "stale-session"). No rate rule is needed for it. (Review & clean-up.)
+   - **`auth.rate_limited`:** Better Auth answers 429 without logging; `handleAuthRequest()` wraps its handler and logs it.
+   - **Client address:** the request boundary sets `x-storyforge-client-ip` from the socket on every request; Better Auth reads only that header, so spoofed `X-Forwarded-For` doesn't escape the limit.
+   - **Two fixes in the E00 runtime found here:** dev servers build into `.next-dev` (`next.config.mjs` `distDir`) so they can't overwrite the production build in `.next`; and `next()` now gets this server's `hostname`/`port` — Next fetches server-action redirect targets from itself and defaulted to `localhost:3000`.
+   - **Error reason:** Better Auth reports used and expired links alike as `INVALID_TOKEN`; `auth.link.invalid` logs reason `invalid` (or `expired` if it ever says so). It is logged in `handleAuthRequest` from the verify redirect, not by the public error page.
+   - **Pages:** `requirePageActor()` (`src/server/auth/page-actor.ts`) gives server components the actor from one cached session lookup per request and redirects to `signInPath(next)` (shared with the middleware) when a stale cookie got through. `TRUST_PROXY_HOPS` selects the X-Forwarded-For entry behind N proxies; development trusts both localhost and 127.0.0.1 origins.
 
 ## Observability
 

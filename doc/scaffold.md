@@ -46,6 +46,8 @@ sequenceDiagram
 
 **Why the shared state lives on `globalThis`:** esbuild bundles the custom server and Next bundles the route handlers, so each loads its own copy of every module. `processSingleton()` (`src/server/singleton.ts`) keys the request context, the root logger and the DB pool on `globalThis` so both copies share them. Without it, route-handler logs lose the request id.
 
+**Dev vs production build folders (E01):** dev servers build into `.next-dev`, production into `.next` (`next.config.mjs` `distDir`) — a dev server running beside `npm run start` or the e2e suite used to overwrite the production build. **`next()` gets `hostname`/`port` (E01):** Next fetches server-action redirect targets from itself; without them it called `localhost:3000`.
+
 **Build:** `npm run build` = `next build` + `scripts/build-server.mjs` (esbuild bundles `dist/main.js`, `dist/worker.js`, `dist/migrate.js`, dependencies external, migrations copied). No `output: "standalone"` (it doesn't trace a custom server). The Next config is plain `next.config.mjs` because Next loads it at runtime and the image has no TypeScript. `@next/env` is loaded with `createRequire` because it is a CommonJS bundle that Node's ESM loader and Next's bundler import differently.
 
 **Claude seam:** `ClaudeClient.stream(params, {feature, fixture?}, onText?)`. `getClaude()` returns `FakeClaude` unless `AI_CLIENT=anthropic`. FakeClaude reads `tests/fixtures/claude/<feature>/<key>.json` (key = `fixture` or a hash of the params) and throws `MissingFixtureError` — it never touches the network. Default model `claude-opus-5-5`. No feature uses it yet (E08).
@@ -116,7 +118,7 @@ See the quick-start table in [README.md](README.md#quick-start). In short: `dock
 
 ## Known gaps / follow-ups
 
-- The DB client reads `process.env.DATABASE_URL` instead of the validated env → E01.
+- ~~The DB client reads `process.env.DATABASE_URL` instead of the validated env~~ — done in E01 (`getEnv()`; tests switch with `withDatabaseUrl()`).
 - Object storage (MinIO or another S3-compatible store) → E03; MinIO's community images can't be pinned reliably any more.
 - The image is ~1 GB (mostly Next.js's production dependencies); slimming, BuildKit cache mounts and CI caching (Playwright browser, `.next/cache`, Docker layers) are possible later.
 - `npm audit` shows 20 advisories in dev-only tooling (ESLint/Vitest glob libraries, drizzle-kit's esbuild); production dependencies have none (`postcss` overridden to 8.5.33).

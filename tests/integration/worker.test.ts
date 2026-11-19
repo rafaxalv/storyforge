@@ -7,7 +7,7 @@ describe("service-health: Worker starts", () => {
     const p = spawnTs("src/worker.ts", { DATABASE_URL: testDatabaseUrl() });
     try {
       const startup = await p.waitFor("startup");
-      expect(startup).toMatchObject({ role: "worker", env: "production", logLevel: "info" });
+      expect(startup).toMatchObject({ role: "worker", env: "test", logLevel: "info" });
       await p.waitFor("worker.ready");
       const events = p.lines.map((l) => l.event);
       expect(events.indexOf("startup")).toBeLessThan(events.indexOf("worker.ready"));

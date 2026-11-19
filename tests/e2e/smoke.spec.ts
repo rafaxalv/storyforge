@@ -1,10 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-test("home page loads and carries a request id", async ({ page }) => {
+test("a signed-out visit to / ends on the sign-in page, with a request id", async ({ page }) => {
   const response = await page.goto("/");
+  expect(page.url()).toMatch(/\/sign-in$/);
   expect(response?.status()).toBe(200);
   expect(response?.headers()["x-request-id"]).toMatch(/^[0-9a-f-]{36}$/);
-  await expect(page.getByRole("heading", { name: "storyforge" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in to storyforge" })).toBeVisible();
 });
 
 test("health endpoint reports the database as ok", async ({ request }) => {

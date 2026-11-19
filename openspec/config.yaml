@@ -14,6 +14,10 @@ context: |
   env = getEnv() (Zod, .env* loaded like Next); process-wide state via processSingleton (src/server/singleton.ts); Claude only via getClaude() (FakeClaude by default).
   Conventions: only src/server/<module> touches the DB or Claude; every domain function takes `actor` and enforces ownership;
   user text in prompts is delimited and treated as data, never instructions.
+  Auth (E01): every domain function takes `actor` first (getActor / requirePageActor in pages); requireOwner / requireAdmin
+  throw Forbidden, which clients see as 404 (never confirm another user's data exists); each entity gets the access test
+  pattern from tests/integration/access.test.ts (twoUsers); every epic storing user data registers a purge step
+  (registerPurgeStep). Dev servers build into .next-dev, production into .next.
   Logging: pino via log(name) -> child logger, names storyforge:<module>[:<sub>]; requestId from AsyncLocalStorage on every line;
   jobs carry jobId + originating requestId; LOG_LEVEL env (debug locally); never log manuscript or library text.
   Tests: Vitest unit + integration (real Postgres), Playwright e2e; Claude replaced by FakeClaude replaying tests/fixtures/claude/.

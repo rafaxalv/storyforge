@@ -9,7 +9,7 @@ describe("service-health: Worker cannot reach the database", () => {
     expect(code).not.toBe(0);
     expect(p.lines.find((l) => l.event === "startup")).toMatchObject({
       role: "worker",
-      env: "production",
+      env: "test",
     });
     expect(p.lines.find((l) => l.event === "worker.start.failed")).toMatchObject({
       level: "error",
