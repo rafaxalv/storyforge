@@ -19,7 +19,7 @@ Planning: [PRD.md](../PRD.md) · [ARCHITECTURE.md](../ARCHITECTURE.md) · [EPICS
 | Lint / types | `npm run lint && npm run typecheck` |
 | Tests | `npm run test:unit` (no Docker needed) · `npm test` (unit + integration, needs Postgres) |
 | E2E | `npx playwright install chromium` once, then `npm run build && npm run test:e2e` |
-| Production build | `npm run build` → `npm run start` (web) / `npm run worker:start` (worker); env comes from the process, `.env` is not loaded |
+| Production build | `npm run build` → `npm run start` (web) / `npm run worker:start` (worker); `.env*` files load as in Next.js, variables already set in the process win |
 | Image | `docker build -t storyforge .` → `docker run -e ROLE=web\|worker -e DATABASE_URL=… storyforge`; migrations: `docker run … storyforge node dist/migrate.js` |
 
 **Logs:** stdout (coloured in dev, JSON in production) and `logs/app.log` when `LOG_FILE` is set (it is in `.env.example`). Level: `LOG_LEVEL` (`trace` … `silent`; `.env.example` uses `debug`). Follow one request with `grep '"requestId":"<id>"' logs/app.log`; the id is in the `x-request-id` response header. Details: [scaffold.md](scaffold.md#logs--debugging).
@@ -30,7 +30,7 @@ Planning: [PRD.md](../PRD.md) · [ARCHITECTURE.md](../ARCHITECTURE.md) · [EPICS
 
 | Doc | Epic | Status | Entrypoints | Files | One-liner |
 |-----|------|--------|-------------|-------|-----------|
-| [scaffold.md](scaffold.md) | E00 | draft | `GET /api/health`, `npm run dev`, `npm run worker` | `src/server/`, `src/shared/framework.ts`, `src/worker.ts` | Toolchain, logging + request ids, health, worker, tests/CI, image, Claude seam |
+| [scaffold.md](scaffold.md) | E00 | final | `GET /api/health`, `npm run dev`, `npm run worker` | `src/server/`, `src/shared/framework.ts`, `src/worker.ts` | Toolchain, logging + request ids, health, worker, tests/CI, image, Claude seam |
 
 Finding the right doc: `grep -l "<file, route, logger, event or env var>" doc/*.md` — every doc's header lists its `files`, `entrypoints`, `loggers`, `events`, `env`, `specs`, `keywords`. Behavior lives in `../openspec/specs/`, not here.
 

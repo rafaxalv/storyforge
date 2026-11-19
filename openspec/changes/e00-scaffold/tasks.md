@@ -44,6 +44,6 @@
 
 ## 8. Docs
 
-- [ ] 8.1 Fill `doc/README.md` quick-start (prerequisites incl. Docker and the Node PATH line, setup, run web and worker, tests, logs, env vars) and verify a fresh clone follows it end to end
-- [ ] 8.2 Finalize `doc/scaffold.md` (findability header with files, entrypoints, loggers, events, env, specs; logs & debugging; deployment hardening notes) and its row in `doc/README.md`; set `status: final`
-- [ ] 8.3 Refresh `openspec/config.yaml` `context:` with the resolved commands and any convention changes made during the epic
+- [x] 8.1 Fill `doc/README.md` quick-start (prerequisites incl. Docker and the Node PATH line, setup, run web and worker, tests, logs, env vars) and verify a fresh clone follows it end to end
+- [x] 8.2 Finalize `doc/scaffold.md` (findability header with files, entrypoints, loggers, events, env, specs; logs & debugging; deployment hardening notes) and its row in `doc/README.md`; set `status: final`
+- [x] 8.3 Refresh `openspec/config.yaml` `context:` with the resolved commands and any convention changes made during the epic
