@@ -34,6 +34,7 @@ Planning: [PRD.md](../PRD.md) · [ARCHITECTURE.md](../ARCHITECTURE.md) · [EPICS
 |-----|------|--------|-------------|-------|-----------|
 | [scaffold.md](scaffold.md) | E00 | final | `GET /api/health`, `npm run dev`, `npm run worker` | `src/server/`, `src/shared/framework.ts`, `src/worker.ts` | Toolchain, logging + request ids, health, worker, tests/CI, image, Claude seam |
 | [auth.md](auth.md) | E01 | final | `/sign-in`, `/settings`, `/api/auth/*`, job `account.purge` | `src/server/auth/`, `src/app/(auth)/`, `src/app/(app)/`, `src/server/jobs/` | Sign-in (magic link, Google), sessions, actor/ownership helpers, account deletion + purge |
+| [book-profile.md](book-profile.md) | E02 | draft | `/`, `/books/[bookId]`, `/profile`, `/concept` | `src/server/books/`, `src/app/(app)/books/`, `src/shared/id-scheme.ts`, `src/shared/rich-text.ts` | Books, profile, languages, rules, truth labels, parts and chapters, Concept with autosave |
 
 Finding the right doc: `grep -l "<file, route, logger, event or env var>" doc/*.md` — every doc's header lists its `files`, `entrypoints`, `loggers`, `events`, `env`, `specs`, `keywords`. Behavior lives in `../openspec/specs/`, not here.
 

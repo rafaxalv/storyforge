@@ -22,7 +22,7 @@ Source: [PRD.md](PRD.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · Changes: `open
 |----|------|--------|------------|--------|-----|
 | E00 | Scaffolding & environment | `e00-scaffold` | — | done | [scaffold.md](doc/scaffold.md) |
 | E01 | Accounts & auth | `e01-auth` | E00 | done | [auth.md](doc/auth.md) |
-| E02 | Book profile & structure | `e02-book-profile` | E01 | todo | — |
+| E02 | Book profile & structure | `e02-book-profile` | E01 | planned | [book-profile.md](doc/book-profile.md) |
 | E03 | Private library | `e03-private-library` | E02 | todo | — |
 | E04 | Voices & chapter writing styles | `e04-voices` | E03 | todo | — |
 | E05 | Chapter plan & scene cards | `e05-plan-scenes` | E03, E04 | todo | — |
