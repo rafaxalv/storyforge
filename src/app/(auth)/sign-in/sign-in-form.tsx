@@ -66,7 +66,14 @@ export function SignInForm({ next, googleEnabled }: { next: string; googleEnable
       {googleEnabled && (
         <button
           type="button"
-          onClick={() => void authClient.signIn.social({ provider: "google", callbackURL: next })}
+          onClick={async () => {
+            setError("");
+            const { error: apiError } = await authClient.signIn.social({
+              provider: "google",
+              callbackURL: next,
+            });
+            if (apiError) setError("Could not start Google sign-in. Try again or use email.");
+          }}
         >
           Continue with Google
         </button>

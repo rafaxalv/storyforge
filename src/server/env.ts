@@ -33,6 +33,8 @@ const EnvSchema = z
           .filter(Boolean),
       )
       .pipe(z.array(z.email())),
+    /** Proxies in front of the app (0 = clients connect directly). Used for rate limits. */
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
 

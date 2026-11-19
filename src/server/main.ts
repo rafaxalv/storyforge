@@ -21,7 +21,9 @@ async function main(): Promise<void> {
   await app.prepare();
   const handle = app.getRequestHandler();
 
-  const server = createServer(withRequestBoundary((req, res) => handle(req, res)));
+  const server = createServer(
+    withRequestBoundary((req, res) => handle(req, res), { trustProxyHops: env.TRUST_PROXY_HOPS }),
+  );
   // e.g. EADDRINUSE: one clear line and exit, instead of an uncaught exception.
   server.once("error", (err) => {
     logger.fatal(

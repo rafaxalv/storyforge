@@ -14,6 +14,22 @@ export function isStaticAsset(route: string): boolean {
 }
 
 /**
+ * The client address used for rate limits. With `trustProxyHops` = 0 it is the socket
+ * address. Behind N trusted proxies it is the N-th entry from the right of X-Forwarded-For
+ * (each proxy appends the address it saw), so entries a client wrote itself are ignored.
+ */
+export function clientIp(req: IncomingMessage, trustProxyHops = 0): string {
+  const socket = req.socket.remoteAddress ?? "unknown";
+  if (trustProxyHops <= 0) return socket;
+  const header = req.headers["x-forwarded-for"];
+  const hops = (Array.isArray(header) ? header.join(",") : (header ?? ""))
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return hops[hops.length - trustProxyHops] ?? hops[0] ?? socket;
+}
+
+/**
  * Wraps a request handler with the storyforge request boundary:
  * - resolves the request id (reuse a well-formed `x-request-id`, else generate),
  *   returns it in the response and passes it on in the request headers;
@@ -21,7 +37,10 @@ export function isStaticAsset(route: string): boolean {
  * - writes exactly one `request` line when the response finishes or the client aborts;
  * - turns an unhandled error into a generic 500, with details only in the log.
  */
-export function withRequestBoundary(handler: Handler): Handler {
+export function withRequestBoundary(
+  handler: Handler,
+  opts: { trustProxyHops?: number } = {},
+): Handler {
   return (req, res) => {
     const logger = log("http");
     const requestId = resolveRequestId(req.headers["x-request-id"]);
@@ -29,9 +48,8 @@ export function withRequestBoundary(handler: Handler): Handler {
     // request context.
     req.headers["x-request-id"] = requestId;
     res.setHeader("x-request-id", requestId);
-    // The client address for rate limits, from our own socket. Always overwritten, so a
-    // client can't choose it (X-Forwarded-For is not trusted until a proxy is configured).
-    req.headers[CLIENT_IP_HEADER] = req.socket.remoteAddress ?? "unknown";
+    // The client address for rate limits. Always overwritten, so a client can't choose it.
+    req.headers[CLIENT_IP_HEADER] = clientIp(req, opts.trustProxyHops);
 
     const started = process.hrtime.bigint();
     const method = req.method ?? "GET";

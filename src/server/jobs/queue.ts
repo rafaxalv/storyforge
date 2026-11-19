@@ -33,25 +33,47 @@ function sender(): Promise<PgBoss> {
       schedule: false,
     });
     boss.on("error", (err) => log("jobs").error({ event: "jobs.error", err }, "job queue error"));
-    await boss.start();
-    await ensureQueues(boss);
-    return boss;
+    try {
+      await boss.start();
+      await ensureQueues(boss);
+      return boss;
+    } catch (err) {
+      // Don't keep a failed start: the next enqueue tries again.
+      setProcessSingleton("jobs.sender", undefined);
+      throw err;
+    }
   });
 }
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
- * Queues a job. The originating request id travels in the payload so the worker's log
- * lines can be correlated with the request that caused them.
+ * Queues a job, retrying transient failures (3 attempts, 0.2 s then 1 s apart). The
+ * originating request id travels in the payload so the worker's log lines can be
+ * correlated with the request that caused them.
  */
 export async function enqueue(
   queue: QueueName,
   data: Record<string, unknown>,
+  retryDelaysMs: readonly number[] = [200, 1_000],
 ): Promise<string | null> {
-  const boss = await sender();
   const requestId = currentContext()?.requestId;
-  const jobId = await boss.send(queue, { ...data, requestId });
-  log("jobs").info({ event: "jobs.enqueued", queue, jobId }, `job queued on ${queue}`);
-  return jobId;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const boss = await sender();
+      const jobId = await boss.send(queue, { ...data, requestId });
+      log("jobs").info({ event: "jobs.enqueued", queue, jobId }, `job queued on ${queue}`);
+      return jobId;
+    } catch (err) {
+      const wait = retryDelaysMs[attempt];
+      if (wait === undefined) throw err;
+      log("jobs").warn(
+        { event: "jobs.enqueue.retry", queue, attempt: attempt + 1, err },
+        "retrying enqueue",
+      );
+      await delay(wait);
+    }
+  }
 }
 
 /** Stops the send-only instance (shutdown and tests). */

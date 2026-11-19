@@ -15,10 +15,12 @@ export default async function SignInErrorPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const code = (await searchParams).error ?? "";
-  log("auth").warn(
-    { event: "auth.link.invalid", reason: REASONS[code] ?? "unknown" },
-    "sign-in link rejected",
-  );
+  // Only Better Auth's redirect carries a code; plain visits and reloads aren't logged.
+  if (code)
+    log("auth").warn(
+      { event: "auth.link.invalid", reason: REASONS[code] ?? "unknown" },
+      "sign-in link rejected",
+    );
   return (
     <main style={{ maxWidth: "24rem", margin: "0 auto" }}>
       <h1>That link no longer works</h1>

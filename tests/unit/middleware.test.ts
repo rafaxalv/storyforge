@@ -29,6 +29,11 @@ describe("auth-session: App pages require a session (middleware layer)", () => {
     },
   );
 
+  it("passes the requested path to the layout when a cookie is present", () => {
+    const res = middleware(req("/settings?tab=name", "storyforge.session_token=abc.def"));
+    expect(res.headers.get("x-middleware-request-x-storyforge-path")).toBe("/settings?tab=name");
+  });
+
   it("lets a request with a session cookie through (the layout validates it)", () => {
     expect(
       middleware(req("/settings", "storyforge.session_token=abc.def")).headers.get("location"),

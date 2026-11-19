@@ -24,6 +24,20 @@ export function roleFor(email: string, adminEmails: readonly string[]): Role {
   return adminEmails.includes(email.trim().toLowerCase()) ? "admin" : "user";
 }
 
+/**
+ * Origins allowed to call the auth endpoints: the public base URL, plus in development its
+ * localhost / 127.0.0.1 twin (tools and browsers use either for the same dev server).
+ */
+export function trustedOrigins(env: Env): string[] {
+  const base = baseUrl(env);
+  if (env.NODE_ENV === "production") return [base];
+  const url = new URL(base);
+  const twin = { localhost: "127.0.0.1", "127.0.0.1": "localhost" }[url.hostname];
+  if (!twin) return [base];
+  url.hostname = twin;
+  return [base, url.origin];
+}
+
 /** Initial display name: the local part of the email, at most 80 characters. */
 export function defaultName(email: string): string {
   return (email.split("@")[0] || "Author").slice(0, 80);
@@ -43,7 +57,7 @@ export function authOptions(env: Env = getEnv()) {
     appName: "storyforge",
     baseURL: baseUrl(env),
     secret: env.BETTER_AUTH_SECRET,
-    trustedOrigins: [baseUrl(env)],
+    trustedOrigins: trustedOrigins(env),
     telemetry: { enabled: false },
     database: drizzleAdapter(getDb(), { provider: "pg", schema }),
     session: {
@@ -64,7 +78,18 @@ export function authOptions(env: Env = getEnv()) {
           await getDb()
             .delete(schema.verification)
             .where(eq(schema.verification.identifier, user.email));
-          const jobId = await enqueue(QUEUES.accountPurge, { userId: user.id });
+          // The account is already gone, so a queue failure must not turn into an error
+          // page. It is logged for the operator; the orphan sweep (account.purge.sweep, from
+          // the first epic that stores user data) catches anything a lost job leaves behind.
+          let jobId: string | null = null;
+          try {
+            jobId = await enqueue(QUEUES.accountPurge, { userId: user.id });
+          } catch (err) {
+            log("account").error(
+              { event: "account.purge.enqueue_failed", userId: user.id, err },
+              "account deleted but purge job could not be queued",
+            );
+          }
           log("account").info(
             { event: "account.deleted", userId: user.id, jobId },
             "account deleted",

@@ -89,8 +89,10 @@ test("delete account: confirmation required, then goodbye and signed out", async
   await expect(page).toHaveURL(/\/goodbye$/);
   await expect(page.getByRole("heading", { name: "Your account is deleted" })).toBeVisible();
 
+  // The old cookie is still in the browser: middleware lets it through, the layout finds
+  // no session and sends the visitor to sign-in keeping the requested page.
   await page.goto("/settings");
-  await expect(page).toHaveURL(/\/sign-in/);
+  await expect(page).toHaveURL(/\/sign-in\?next=%2Fsettings$/);
   const session = await request.get("/api/auth/get-session");
   expect(await session.json()).toBeNull();
 });

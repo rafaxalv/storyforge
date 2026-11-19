@@ -1,5 +1,6 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
+import { PATH_HEADER } from "@/shared/headers";
 
 /** Paths anyone may open without a session. */
 const PUBLIC = [/^\/sign-in(\/|$)/, /^\/goodbye$/, /^\/api\/health$/, /^\/api\/auth\//];
@@ -12,7 +13,13 @@ const PUBLIC = [/^\/sign-in(\/|$)/, /^\/goodbye$/, /^\/api\/health$/, /^\/api\/a
 export function middleware(request: NextRequest): NextResponse {
   const { pathname, search } = request.nextUrl;
   if (PUBLIC.some((re) => re.test(pathname))) return NextResponse.next();
-  if (getSessionCookie(request, { cookiePrefix: "storyforge" })) return NextResponse.next();
+  if (getSessionCookie(request, { cookiePrefix: "storyforge" })) {
+    // Pass the requested path on, so the (app) layout can send a stale-cookie visitor to
+    // sign-in with `next` as well.
+    const headers = new Headers(request.headers);
+    headers.set(PATH_HEADER, `${pathname}${search}`);
+    return NextResponse.next({ request: { headers } });
+  }
   const url = new URL("/sign-in", request.url);
   if (pathname !== "/") url.searchParams.set("next", `${pathname}${search}`);
   return NextResponse.redirect(url);
