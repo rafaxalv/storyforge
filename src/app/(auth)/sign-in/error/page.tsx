@@ -1,30 +1,13 @@
 import Link from "next/link";
-import { log } from "@/server/log";
+import { MAGIC_LINK_TTL_MIN } from "@/shared/auth";
 
-export const dynamic = "force-dynamic";
-
-// Better Auth reports used, unknown and (usually) expired links all as INVALID_TOKEN.
-const REASONS: Record<string, "expired" | "invalid"> = {
-  EXPIRED_TOKEN: "expired",
-  INVALID_TOKEN: "invalid",
-};
-
-export default async function SignInErrorPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const code = (await searchParams).error ?? "";
-  // Only Better Auth's redirect carries a code; plain visits and reloads aren't logged.
-  if (code)
-    log("auth").warn(
-      { event: "auth.link.invalid", reason: REASONS[code] ?? "unknown" },
-      "sign-in link rejected",
-    );
+// Where Better Auth sends a rejected sign-in link. The rejection itself is logged where it
+// happens (auth.link.invalid in handleAuthRequest); this page only explains.
+export default function SignInErrorPage() {
   return (
     <main style={{ maxWidth: "24rem", margin: "0 auto" }}>
       <h1>That link no longer works</h1>
-      <p>Sign-in links work once and expire after 15 minutes.</p>
+      <p>Sign-in links work once and expire after {MAGIC_LINK_TTL_MIN} minutes.</p>
       <p>
         <Link href="/sign-in">Get a new link</Link>
       </p>

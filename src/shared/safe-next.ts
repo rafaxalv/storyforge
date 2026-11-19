@@ -12,8 +12,7 @@ export function safeNext(value: string | null | undefined): string {
     return "/";
   }
   for (const candidate of [value, decoded]) {
-    if (!candidate.startsWith("/") || candidate.startsWith("//") || candidate.startsWith("/\\"))
-      return "/";
+    if (!candidate.startsWith("/") || candidate.startsWith("//")) return "/";
     if (/[\u0000-\u001f\\]/.test(candidate)) return "/";
   }
   // Parse against a dummy origin: if the result leaves it, the path was not local.

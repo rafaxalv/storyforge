@@ -1,2 +1,7 @@
 checkpoints:
   plan: { approved: 2026-11-19, notes: "approved as presented (Better Auth chosen by the author)" }
+review:
+  done: 2026-11-19
+  findings: "9 code-review + 24 simplify (4 angles, deduped to ~16)"
+  fixed: "code-review 8 (queue start not cached, purge durability, stale-cookie next, TRUST_PROXY_HOPS, dev origins, Google error, error-page logging, smoke e2e); simplify: delete endpoint closed + single freshAge rule, purge queued before delete with live-account skip, link-invalid logged at the verify, cached page actor + requirePageActor, shared signInPath/cookie prefix/TTL note/googleEnabled, worker parses payload once, test helper and e2e polling tidy-ups"
+  deferred: "withActorResponse kept for E02's first API route; role sync in one SQL statement; pg-boss on the app pool; SMTP transport pooling; a process-singleton registry with one reset for tests/shutdown -> later"

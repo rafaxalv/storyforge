@@ -1,7 +1,9 @@
 import { readdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { sql } from "drizzle-orm";
+import { getActor } from "@/server/auth/actor";
 import { getAuth, handleAuthRequest, type Auth } from "@/server/auth/auth";
+import { extractLink } from "../link";
 import { getDb } from "@/server/db/client";
 import { baseUrl, getEnv } from "@/server/env";
 import { CLIENT_IP_HEADER } from "@/server/http";
@@ -46,9 +48,8 @@ export async function outbox(): Promise<OutboxMessage[]> {
 
 /** The sign-in link in the newest message to `email`. */
 export async function latestLink(email: string): Promise<string> {
-  const mine = (await outbox()).filter((m) => m.to === email.toLowerCase() || m.to === email);
-  const last = mine.at(-1);
-  const link = last?.text.match(/https?:\/\/\S+/)?.[0];
+  const mine = (await outbox()).filter((m) => m.to.toLowerCase() === email.toLowerCase());
+  const link = extractLink(mine.at(-1)?.text);
   if (!link) throw new Error(`no sign-in link for ${email} in the outbox`);
   return link;
 }
@@ -123,17 +124,10 @@ export async function twoUsers(): Promise<{
   aliceId: string;
   bobId: string;
 }> {
-  const a = await signIn(`alice-${crypto.randomUUID()}@example.com`);
-  const b = await signIn(`bob-${crypto.randomUUID()}@example.com`);
-  const id = async (h: Headers) => {
-    const s = await getAuth().api.getSession({ headers: h });
-    if (!s) throw new Error("no session");
-    return s.user.id;
-  };
-  return {
-    alice: a.headers,
-    bob: b.headers,
-    aliceId: await id(a.headers),
-    bobId: await id(b.headers),
-  };
+  const [a, b] = await Promise.all([
+    signIn(`alice-${crypto.randomUUID()}@example.com`),
+    signIn(`bob-${crypto.randomUUID()}@example.com`),
+  ]);
+  const [alice, bob] = await Promise.all([getActor(a.headers), getActor(b.headers)]);
+  return { alice: a.headers, bob: b.headers, aliceId: alice.userId, bobId: bob.userId };
 }

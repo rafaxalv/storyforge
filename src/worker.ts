@@ -1,7 +1,7 @@
 import { PgBoss } from "pg-boss";
 import { requestContext } from "@/server/context";
 import { QUEUES } from "@/server/jobs/names";
-import { runPurge } from "@/server/jobs/purge";
+import { PurgePayload, runPurge } from "@/server/jobs/purge";
 import { ensureQueues } from "@/server/jobs/queue";
 import { log } from "@/server/log";
 import { onShutdown, startProcess } from "@/server/startup";
@@ -30,9 +30,10 @@ async function main(): Promise<void> {
   // so its log lines can be followed back to the request that queued it.
   await boss.work(QUEUES.accountPurge, async ([job]) => {
     if (!job) return;
-    const data = job.data as { requestId?: unknown };
-    const requestId = typeof data.requestId === "string" ? data.requestId : job.id;
-    await requestContext.run({ requestId, jobId: job.id }, () => runPurge(job.data));
+    const { userId, requestId } = PurgePayload.parse(job.data);
+    await requestContext.run({ requestId: requestId ?? job.id, jobId: job.id }, () =>
+      runPurge(userId),
+    );
   });
 
   logger.info({ event: "worker.ready", queues: Object.values(QUEUES) }, "worker ready for jobs");

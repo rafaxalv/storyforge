@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { clearPurgeStepsForTests, registerPurgeStep, runPurge } from "@/server/jobs/purge";
+import {
+  clearPurgeStepsForTests,
+  PurgePayload,
+  registerPurgeStep,
+  runPurge,
+} from "@/server/jobs/purge";
+import { getActor } from "@/server/auth/actor";
+import { resetAuthTables, signIn } from "./auth-helpers";
 import { captureLogs } from "../helpers";
 
 afterEach(clearPurgeStepsForTests);
@@ -10,7 +17,7 @@ describe("account-management: Deleted accounts are purged", () => {
     const ran: string[] = [];
     registerPurgeStep("books", async (id) => void ran.push(`books:${id}`));
     registerPurgeStep("files", async (id) => void ran.push(`files:${id}`));
-    expect(await runPurge({ userId: "u-1", requestId: "req-1" })).toBe(2);
+    expect(await runPurge("u-1")).toBe(2);
     expect(ran).toEqual(["books:u-1", "files:u-1"]);
     expect(lines.filter((l) => l.event === "account.purge.step").map((l) => l.step)).toEqual([
       "books",
@@ -31,7 +38,7 @@ describe("account-management: Deleted accounts are purged", () => {
     registerPurgeStep("never", async () => {
       throw new Error("must not run");
     });
-    await expect(runPurge({ userId: "u-2" })).rejects.toThrow("disk unavailable");
+    await expect(runPurge("u-2")).rejects.toThrow("disk unavailable");
     expect(
       lines.find((l) => l.event === "account.purge.step" && l.step === "broken"),
     ).toMatchObject({
@@ -43,8 +50,26 @@ describe("account-management: Deleted accounts are purged", () => {
   });
 
   it("rejects malformed payloads and duplicate step names", async () => {
-    await expect(runPurge({})).rejects.toThrow();
+    expect(() => PurgePayload.parse({})).toThrow();
+    expect(PurgePayload.parse({ userId: "u", requestId: "r" })).toEqual({
+      userId: "u",
+      requestId: "r",
+    });
     registerPurgeStep("once", async () => undefined);
     expect(() => registerPurgeStep("once", async () => undefined)).toThrow(/already registered/);
+  });
+
+  it("does nothing if the account still exists (deletion failed after queueing)", async () => {
+    await resetAuthTables();
+    const { lines } = captureLogs();
+    const ran: string[] = [];
+    registerPurgeStep("books", async (id) => void ran.push(id));
+    const me = await getActor((await signIn("still-here@example.com")).headers);
+    expect(await runPurge(me.userId)).toBe(0);
+    expect(ran).toEqual([]);
+    expect(lines.find((l) => l.event === "account.purge.skipped")).toMatchObject({
+      userId: me.userId,
+      reason: "account-exists",
+    });
   });
 });

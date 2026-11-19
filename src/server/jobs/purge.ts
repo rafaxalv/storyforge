@@ -1,4 +1,7 @@
+import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { getDb } from "../db/client";
+import { user } from "../db/schema";
 import { log } from "../log";
 
 /**
@@ -25,10 +28,21 @@ export const PurgePayload = z.object({
   requestId: z.string().optional(),
 });
 
-/** The `account.purge` job: runs every step; throws on the first failure so pg-boss retries. */
-export async function runPurge(payload: unknown): Promise<number> {
-  const { userId } = PurgePayload.parse(payload);
+/**
+ * The `account.purge` job: runs every step; throws on the first failure so pg-boss retries.
+ * The job is queued just before the account is deleted; if the account still exists (the
+ * deletion failed after queueing), it does nothing.
+ */
+export async function runPurge(userId: string): Promise<number> {
   const logger = log("account");
+  const [live] = await getDb().select({ id: user.id }).from(user).where(eq(user.id, userId));
+  if (live) {
+    logger.warn(
+      { event: "account.purge.skipped", userId, reason: "account-exists" },
+      "purge skipped",
+    );
+    return 0;
+  }
   for (const step of steps) {
     try {
       await step.run(userId);

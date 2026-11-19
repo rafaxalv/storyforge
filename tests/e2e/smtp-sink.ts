@@ -20,12 +20,11 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   await mkdir(SINK_DIR, { recursive: true });
 
   const url = process.env.DATABASE_URL_TEST;
-  if (url) {
-    const client = new pg.Client({ connectionString: url });
-    await client.connect();
-    await client.query(`TRUNCATE "rate_limit"`);
-    await client.end();
-  }
+  if (!url) throw new Error("DATABASE_URL_TEST is not set (see .env.example)");
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+  await client.query(`TRUNCATE "rate_limit"`);
+  await client.end();
 
   const server = new SMTPServer({
     authOptional: true,

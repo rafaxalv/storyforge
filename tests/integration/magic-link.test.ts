@@ -71,8 +71,10 @@ describe("auth-session: Sign in with an emailed magic link", () => {
     await requestLink(email);
     const link = await latestLink(email);
     expect((await call(link)).status).toBe(302);
+    const { lines } = captureLogs();
     const again = await call(link);
     expect(location(again)).toMatch(/^\/sign-in\/error\?error=/);
+    expect(lines.find((l) => l.event === "auth.link.invalid")).toMatchObject({ reason: "invalid" });
     expect(again.headers.getSetCookie().join()).not.toMatch(/session_token=[^;]/);
   });
 

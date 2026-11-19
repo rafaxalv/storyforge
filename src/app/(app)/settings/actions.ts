@@ -14,7 +14,7 @@ export interface FormState {
 
 /** Settings form: rename yourself. */
 export async function updateNameAction(_prev: FormState, form: FormData): Promise<FormState> {
-  const actor = await getActor(new Headers(await headers()), "settings.updateName");
+  const actor = await getActor(undefined, "settings.updateName");
   try {
     await updateDisplayName(actor, actor.userId, form.get("name"));
   } catch (err) {

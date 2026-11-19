@@ -1,28 +1,37 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { extractLink } from "../link";
 import { SINK_DIR } from "./smtp-sink";
 
 test.describe.configure({ mode: "serial" });
 
 const EMAIL = `e2e-${Date.now()}@example.com`;
 
-/** Waits for the newest sign-in email to `to` in the SMTP sink and returns its link. */
-async function linkFor(to: string, after: number): Promise<string> {
-  for (let i = 0; i < 50; i++) {
-    const files = (await readdir(SINK_DIR)).sort();
-    for (const f of files.reverse()) {
-      if (Number(f.split("-")[0]) < after) continue;
-      const m = JSON.parse(await readFile(join(SINK_DIR, f), "utf8")) as {
-        to?: string;
-        text?: string;
-      };
-      const link = m.text?.match(/https?:\/\/\S+/)?.[0];
-      if (m.to === to && link) return link;
-    }
-    await new Promise((r) => setTimeout(r, 100));
+/** The newest sign-in link to `to` that arrived after `after` (ms), if any. */
+async function findLink(to: string, after: number): Promise<string | undefined> {
+  for (const f of (await readdir(SINK_DIR)).sort().reverse()) {
+    if (Number(f.split("-")[0]) < after) continue;
+    const m = JSON.parse(await readFile(join(SINK_DIR, f), "utf8")) as {
+      to?: string;
+      text?: string;
+    };
+    const link = extractLink(m.text);
+    if (m.to === to && link) return link;
   }
-  throw new Error(`no sign-in email for ${to}`);
+  return undefined;
+}
+
+/** Waits (Playwright's polling) for the sign-in email to `to` in the SMTP sink. */
+async function linkFor(to: string, after: number): Promise<string> {
+  let link: string | undefined;
+  await expect
+    .poll(async () => (link = await findLink(to, after)), {
+      message: `sign-in email for ${to}`,
+      timeout: 5_000,
+    })
+    .toBeTruthy();
+  return link ?? "";
 }
 
 async function requestLinkFor(page: Page, email: string): Promise<string> {

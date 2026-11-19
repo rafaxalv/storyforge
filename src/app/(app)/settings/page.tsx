@@ -1,8 +1,8 @@
-import { getActor } from "@/server/auth/actor";
+import { requirePageActor } from "@/server/auth/page-actor";
 import { DeleteAccountForm, NameForm } from "./forms";
 
 export default async function SettingsPage() {
-  const actor = await getActor(undefined, "page.settings");
+  const actor = await requirePageActor();
   return (
     <main>
       <h1>Settings</h1>

@@ -1,4 +1,4 @@
-import { betterAuth, type BetterAuthOptions } from "better-auth";
+import { APIError, betterAuth, type BetterAuthOptions } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { magicLink } from "better-auth/plugins";
@@ -11,10 +11,10 @@ import { QUEUES } from "../jobs/names";
 import { CLIENT_IP_HEADER } from "../http";
 import { log } from "../log";
 import { processSingleton } from "../singleton";
+import { AUTH_COOKIE_PREFIX, MAGIC_LINK_TTL_MIN } from "@/shared/auth";
 import { emailHash } from "./hash";
 import { magicLinkMessage, sendMail } from "./mail";
 
-export const MAGIC_LINK_TTL_S = 15 * 60;
 const DAY_S = 24 * 60 * 60;
 
 export type Role = "user" | "admin";
@@ -38,6 +38,14 @@ export function trustedOrigins(env: Env): string[] {
   return [base, url.origin];
 }
 
+/** Whether Google sign-in is configured (env validation guarantees both or neither). */
+export function googleEnabled(env: Env): boolean {
+  return Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+}
+
+/** Purge jobs wait this long, so they never run before the deletion they follow commits. */
+export const PURGE_DELAY_S = 60;
+
 /** Initial display name: the local part of the email, at most 80 characters. */
 export function defaultName(email: string): string {
   return (email.split("@")[0] || "Author").slice(0, 80);
@@ -58,6 +66,8 @@ export function authOptions(env: Env = getEnv()) {
     baseURL: baseUrl(env),
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: trustedOrigins(env),
+    // Deletion only through our server action (typed confirmation); auth.api still works.
+    disabledPaths: ["/delete-user", "/delete-user/callback"],
     telemetry: { enabled: false },
     database: drizzleAdapter(getDb(), { provider: "pg", schema }),
     session: {
@@ -72,28 +82,27 @@ export function authOptions(env: Env = getEnv()) {
       },
       deleteUser: {
         enabled: true,
+        // Queue the purge first: if the queue is down, the deletion fails (and can be
+        // retried) instead of leaving data nobody will purge. The job starts later and
+        // skips itself if the account still exists (see runPurge).
+        beforeDelete: async (user) => {
+          const jobId = await enqueue(
+            QUEUES.accountPurge,
+            { userId: user.id },
+            { startAfter: PURGE_DELAY_S },
+          );
+          log("account").info(
+            { event: "account.purge.queued", userId: user.id, jobId },
+            "purge queued",
+          );
+        },
         afterDelete: async (user) => {
           // Better Auth already removed user, sessions and accounts. Unused sign-in links
           // are keyed by email, so they go now; the job only ever sees the user id.
           await getDb()
             .delete(schema.verification)
             .where(eq(schema.verification.identifier, user.email));
-          // The account is already gone, so a queue failure must not turn into an error
-          // page. It is logged for the operator; the orphan sweep (account.purge.sweep, from
-          // the first epic that stores user data) catches anything a lost job leaves behind.
-          let jobId: string | null = null;
-          try {
-            jobId = await enqueue(QUEUES.accountPurge, { userId: user.id });
-          } catch (err) {
-            log("account").error(
-              { event: "account.purge.enqueue_failed", userId: user.id, err },
-              "account deleted but purge job could not be queued",
-            );
-          }
-          log("account").info(
-            { event: "account.deleted", userId: user.id, jobId },
-            "account deleted",
-          );
+          log("account").info({ event: "account.deleted", userId: user.id }, "account deleted");
         },
       },
     },
@@ -112,7 +121,7 @@ export function authOptions(env: Env = getEnv()) {
       customRules: { "/sign-in/magic-link": { window: 600, max: 5 } },
     },
     advanced: {
-      cookiePrefix: "storyforge",
+      cookiePrefix: AUTH_COOKIE_PREFIX,
       ipAddress: { ipAddressHeaders: [CLIENT_IP_HEADER] },
     },
     logger: {
@@ -168,7 +177,7 @@ export function authOptions(env: Env = getEnv()) {
     },
     plugins: [
       magicLink({
-        expiresIn: MAGIC_LINK_TTL_S,
+        expiresIn: MAGIC_LINK_TTL_MIN * 60,
         sendMagicLink: async ({ email, url }) => {
           logger.info(
             {
@@ -198,9 +207,18 @@ export function getAuth(): Auth {
   return processSingleton("auth", createAuth);
 }
 
+/** True when Better Auth refused a deletion because the session is older than freshAge. */
+export function isStaleSessionError(err: unknown): boolean {
+  return (
+    err instanceof APIError &&
+    (err.body as { code?: string } | undefined)?.code === "SESSION_EXPIRED"
+  );
+}
+
 /**
- * Better Auth's HTTP handler plus the one thing it doesn't log itself: requests it rejects
- * for rate limiting (`auth.rate_limited`, with the path and the retry delay).
+ * Better Auth's HTTP handler plus what it doesn't log itself, logged where it happens:
+ * rate-limited requests (`auth.rate_limited`) and rejected sign-in links
+ * (`auth.link.invalid`, from the verify redirect's `error=` code).
  */
 export async function handleAuthRequest(
   request: Request,
@@ -216,6 +234,15 @@ export async function handleAuthRequest(
       { event: "auth.rate_limited", path, retryAfterS },
       "auth request rate limited",
     );
+  }
+  if (new URL(request.url).pathname.endsWith("/magic-link/verify")) {
+    const location = response.headers.get("location");
+    const code = location ? new URL(location, request.url).searchParams.get("error") : null;
+    if (code) {
+      const reason =
+        code === "EXPIRED_TOKEN" ? "expired" : code === "INVALID_TOKEN" ? "invalid" : "unknown";
+      log("auth").warn({ event: "auth.link.invalid", reason }, "sign-in link rejected");
+    }
   }
   return response;
 }

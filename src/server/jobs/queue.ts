@@ -6,7 +6,7 @@ import { processSingleton, peekProcessSingleton, setProcessSingleton } from "../
 import { QUEUES, type QueueName } from "./names";
 
 /** Options every queue gets: retries with backoff, kept for a week. */
-export const QUEUE_OPTIONS = {
+const QUEUE_OPTIONS = {
   retryLimit: 5,
   retryDelay: 30,
   retryBackoff: true,
@@ -45,35 +45,21 @@ function sender(): Promise<PgBoss> {
   });
 }
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 /**
- * Queues a job, retrying transient failures (3 attempts, 0.2 s then 1 s apart). The
- * originating request id travels in the payload so the worker's log lines can be
- * correlated with the request that caused them.
+ * Queues a job. The originating request id travels in the payload so the worker's log
+ * lines can be correlated with the request that caused them. Failures are thrown to the
+ * caller (retrying a job that runs is pg-boss's business, not the request's).
  */
 export async function enqueue(
   queue: QueueName,
   data: Record<string, unknown>,
-  retryDelaysMs: readonly number[] = [200, 1_000],
+  options: { startAfter?: number } = {},
 ): Promise<string | null> {
+  const boss = await sender();
   const requestId = currentContext()?.requestId;
-  for (let attempt = 0; ; attempt++) {
-    try {
-      const boss = await sender();
-      const jobId = await boss.send(queue, { ...data, requestId });
-      log("jobs").info({ event: "jobs.enqueued", queue, jobId }, `job queued on ${queue}`);
-      return jobId;
-    } catch (err) {
-      const wait = retryDelaysMs[attempt];
-      if (wait === undefined) throw err;
-      log("jobs").warn(
-        { event: "jobs.enqueue.retry", queue, attempt: attempt + 1, err },
-        "retrying enqueue",
-      );
-      await delay(wait);
-    }
-  }
+  const jobId = await boss.send(queue, { ...data, requestId }, options);
+  log("jobs").info({ event: "jobs.enqueued", queue, jobId }, `job queued on ${queue}`);
+  return jobId;
 }
 
 /** Stops the send-only instance (shutdown and tests). */

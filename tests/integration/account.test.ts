@@ -7,7 +7,7 @@ import { getDb } from "@/server/db/client";
 import { account, session, user, verification } from "@/server/db/schema";
 import { closeQueue } from "@/server/jobs/queue";
 import { captureLogs } from "../helpers";
-import { clearOutbox, requestLink, resetAuthTables, signIn } from "./auth-helpers";
+import { call, clearOutbox, requestLink, resetAuthTables, signIn } from "./auth-helpers";
 
 beforeAll(resetAuthTables);
 beforeEach(clearOutbox);
@@ -104,5 +104,13 @@ describe("account-management: Author can delete their account", () => {
       ok: false,
       reason: "unauthenticated",
     });
+  });
+
+  it("Better Auth's own delete endpoint is closed: deletion only via the confirmed action", async () => {
+    const email = "bypass@example.com";
+    const { cookie } = await signIn(email);
+    const res = await call("/delete-user", { body: {}, cookie });
+    expect(res.status).toBe(404);
+    expect(await userByEmail(email)).toBeDefined();
   });
 });

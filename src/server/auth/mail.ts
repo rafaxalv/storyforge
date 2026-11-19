@@ -3,6 +3,7 @@ import { join } from "node:path";
 import nodemailer, { type Transporter } from "nodemailer";
 import { getEnv, type Env } from "../env";
 import { log } from "../log";
+import { LINK_LIFETIME_NOTE } from "@/shared/auth";
 
 export interface MailMessage {
   to: string;
@@ -106,7 +107,7 @@ const escapeHtml = (s: string) =>
   );
 
 export function magicLinkMessage(to: string, url: string): MailMessage {
-  const text = `Sign in to storyforge:\n\n${url}\n\nThe link works once and expires in 15 minutes. If you didn't ask for it, ignore this email.`;
-  const html = `<p>Sign in to storyforge:</p><p><a href="${escapeHtml(url)}">Sign in</a></p><p>The link works once and expires in 15 minutes. If you didn't ask for it, ignore this email.</p>`;
+  const text = `Sign in to storyforge:\n\n${url}\n\n${LINK_LIFETIME_NOTE} If you didn't ask for it, ignore this email.`;
+  const html = `<p>Sign in to storyforge:</p><p><a href="${escapeHtml(url)}">Sign in</a></p><p>${LINK_LIFETIME_NOTE} If you didn't ask for it, ignore this email.</p>`;
   return { to, subject: "Your storyforge sign-in link", text, html, template: "magic-link" };
 }

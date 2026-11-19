@@ -1,16 +1,12 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { getAuth } from "../auth/auth";
+import { getAuth, isStaleSessionError } from "../auth/auth";
 import { requireOwner, type Actor } from "../auth/actor";
 import { getDb } from "../db/client";
 import { user } from "../db/schema";
 import { log } from "../log";
 
-export const DisplayName = z
-  .string()
-  .trim()
-  .min(1, "Enter a name")
-  .max(80, "At most 80 characters");
+const DisplayName = z.string().trim().min(1, "Enter a name").max(80, "At most 80 characters");
 
 /** Sets the display name of `userId`; only that user may do it. Returns the stored name. */
 export async function updateDisplayName(
@@ -25,21 +21,19 @@ export async function updateDisplayName(
   return clean;
 }
 
-export const DELETE_CONFIRMATION = "DELETE";
-export const FRESH_SESSION_MS = 24 * 60 * 60 * 1000;
+const DELETE_CONFIRMATION = "DELETE";
 
 export type DeleteResult =
   { ok: true } | { ok: false; reason: "confirmation" | "stale-session" | "unauthenticated" };
 
 /**
- * Deletes the signed-in user's account. Needs the typed confirmation and a session created
- * within 24 hours; Better Auth removes user, sessions and accounts and its afterDelete hook
- * queues the purge job.
+ * Deletes the signed-in user's account. Needs the typed confirmation; Better Auth requires
+ * a session younger than `freshAge` (24 h), removes user, sessions and accounts, and its
+ * delete hooks queue the purge job.
  */
 export async function deleteAccount(
   headers: Headers,
   confirmation: unknown,
-  now = Date.now(),
 ): Promise<DeleteResult> {
   const logger = log("account");
   const auth = getAuth();
@@ -55,13 +49,15 @@ export async function deleteAccount(
     );
     return { ok: false, reason: "confirmation" };
   }
-  if (now - new Date(current.session.createdAt).getTime() > FRESH_SESSION_MS) {
+  try {
+    await auth.api.deleteUser({ headers, body: {} });
+  } catch (err) {
+    if (!isStaleSessionError(err)) throw err;
     logger.warn(
       { event: "account.delete.refused", userId, reason: "stale-session" },
       "session too old",
     );
     return { ok: false, reason: "stale-session" };
   }
-  await auth.api.deleteUser({ headers, body: {} });
   return { ok: true };
 }

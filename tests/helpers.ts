@@ -31,8 +31,7 @@ export function testDatabaseUrl(): string {
   return url;
 }
 
-/** A Postgres URL where nothing listens (port 1 on loopback). */
-export const UNREACHABLE_DB_URL = "postgres://nobody:nothing@127.0.0.1:1/none";
+export { UNREACHABLE_DB_URL } from "./constants";
 
 /**
  * Points the app at another database: sets DATABASE_URL, forgets the validated env and

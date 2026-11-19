@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 import { loadEnv } from "./src/server/env";
+import { UNREACHABLE_DB_URL } from "./tests/constants";
 
 // DATABASE_URL_TEST comes from .env locally and from the workflow in CI.
 loadEnv();
@@ -33,7 +34,7 @@ export default defineConfig({
           name: "unit",
           include: ["tests/unit/**/*.test.ts"],
           // Unit tests never reach a database: anything that tries fails fast.
-          env: { ...shared, DATABASE_URL: "postgres://nobody:nothing@127.0.0.1:1/none" },
+          env: { ...shared, DATABASE_URL: UNREACHABLE_DB_URL },
         },
       },
       {

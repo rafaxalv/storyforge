@@ -9,12 +9,11 @@ afterAll(async () => {
 });
 
 describe("job queue client", () => {
-  it("retries, then fails, while the database is unreachable - and recovers once it is back", async () => {
-    const { lines } = captureLogs();
+  it("fails while the database is unreachable - and recovers once it is back", async () => {
+    captureLogs();
     await closeQueue();
     await withDatabaseUrl(UNREACHABLE_DB_URL);
-    await expect(enqueue(QUEUES.accountPurge, { userId: "q-1" }, [10, 10])).rejects.toThrow();
-    expect(lines.filter((l) => l.event === "jobs.enqueue.retry")).toHaveLength(2);
+    await expect(enqueue(QUEUES.accountPurge, { userId: "q-1" })).rejects.toThrow();
 
     // A failed start must not stay cached: with the database back, the next send works.
     await withDatabaseUrl(testDatabaseUrl());
