@@ -1,17 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { closeDb } from "@/server/db/client";
-import { captureLogs, UNREACHABLE_DB_URL } from "../helpers";
+import { captureLogs, UNREACHABLE_DB_URL, withDatabaseUrl } from "../helpers";
 
 describe("service-health: Database unreachable", () => {
-  const previous = process.env.DATABASE_URL;
-  beforeAll(async () => {
-    await closeDb();
-    process.env.DATABASE_URL = UNREACHABLE_DB_URL;
-  });
-  afterAll(async () => {
-    await closeDb();
-    process.env.DATABASE_URL = previous;
-  });
+  const previous = process.env.DATABASE_URL ?? "";
+  beforeAll(() => withDatabaseUrl(UNREACHABLE_DB_URL));
+  afterAll(() => withDatabaseUrl(previous));
 
   it("responds 503 with only version and db status, and logs a warning", async () => {
     const { lines } = captureLogs();

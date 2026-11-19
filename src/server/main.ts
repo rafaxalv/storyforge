@@ -10,7 +10,14 @@ async function main(): Promise<void> {
   const env = startProcess("web");
   const logger = log("http");
 
-  const app = next({ dev: env.NODE_ENV === "development", dir: process.cwd() });
+  // hostname/port must be this server's: Next fetches redirect targets of server actions
+  // from itself, and without them it defaults to localhost:3000 (another process, or none).
+  const app = next({
+    dev: env.NODE_ENV === "development",
+    dir: process.cwd(),
+    hostname: "localhost",
+    port: env.PORT,
+  });
   await app.prepare();
   const handle = app.getRequestHandler();
 

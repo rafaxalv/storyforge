@@ -17,18 +17,25 @@
     "verbatimModuleSyntax": false,
     "jsx": "preserve",
     "incremental": true,
-    "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./src/*"] }
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": [
+    "*.mjs",
+    "*.ts",
+    ".next/types/**/*.ts",
     "next-env.d.ts",
+    "scripts/**/*.mjs",
     "src/**/*.ts",
     "src/**/*.tsx",
     "tests/**/*.ts",
-    ".next/types/**/*.ts",
-    "*.ts",
-    "*.mjs",
-    "scripts/**/*.mjs"
+    ".next-dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "dist", ".next"]
+  "exclude": ["node_modules", "dist", ".next", ".next-dev"]
 }

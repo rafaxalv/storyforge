@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { EnvError, parseEnv } from "@/server/env";
 
-const valid = { DATABASE_URL: "postgres://u:p@127.0.0.1:5432/db" };
+const SECRET = "x".repeat(32);
+const valid = { DATABASE_URL: "postgres://u:p@127.0.0.1:5432/db", BETTER_AUTH_SECRET: SECRET };
 
 describe("environment validation", () => {
   it("accepts a minimal valid environment with defaults", () => {
@@ -15,7 +16,12 @@ describe("environment validation", () => {
   it("fails closed listing variable names, never values", () => {
     const secret = "postgres-with-a-secret-password";
     try {
-      parseEnv({ DATABASE_URL: secret, LOG_LEVEL: "loud", PORT: "99999" });
+      parseEnv({
+        DATABASE_URL: secret,
+        LOG_LEVEL: "loud",
+        PORT: "99999",
+        BETTER_AUTH_SECRET: SECRET,
+      });
       expect.unreachable("should have thrown");
     } catch (err) {
       expect(err).toBeInstanceOf(EnvError);

@@ -3,6 +3,7 @@ node_modules/
 
 # build output
 .next/
+.next-dev/
 dist/
 next-env.d.ts
 *.tsbuildinfo

@@ -3,9 +3,10 @@ import { log } from "@/server/log";
 
 export const dynamic = "force-dynamic";
 
-const REASONS: Record<string, "expired" | "used"> = {
+// Better Auth reports used, unknown and (usually) expired links all as INVALID_TOKEN.
+const REASONS: Record<string, "expired" | "invalid"> = {
   EXPIRED_TOKEN: "expired",
-  INVALID_TOKEN: "used",
+  INVALID_TOKEN: "invalid",
 };
 
 export default async function SignInErrorPage({
