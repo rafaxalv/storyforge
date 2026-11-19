@@ -26,8 +26,10 @@
   "dependencies": {
     "@anthropic-ai/sdk": "1.10.0",
     "@next/env": "15.5.29",
+    "better-auth": "1.7.26",
     "drizzle-orm": "0.45.4",
     "next": "15.5.29",
+    "nodemailer": "10.6.0",
     "pg": "8.23.1",
     "pg-boss": "12.38.2",
     "pino": "10.4.0",
