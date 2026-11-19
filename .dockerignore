@@ -18,3 +18,5 @@ openspec
 doc
 *.md
 docker-compose.yml
+playwright.config.ts
+vitest.config.ts
