@@ -42,5 +42,5 @@
 
 ## 8. Docs
 
-- [ ] 8.1 Write `doc/auth.md` (findability header, flows, access-layer pattern for later epics, purge registry, env, logs & debugging) and update its row in `doc/README.md`; set `status: final`
-- [ ] 8.2 Update `doc/README.md` quick-start (dev sign-in via console link, outbox), `doc/scaffold.md` (DB URL follow-up closed), `.env.example`, and `openspec/config.yaml` context (auth conventions: `getActor` first, 404 for foreign data, purge steps)
+- [x] 8.1 Write `doc/auth.md` (findability header, flows, access-layer pattern for later epics, purge registry, env, logs & debugging) and update its row in `doc/README.md`; set `status: final`
+- [x] 8.2 Update `doc/README.md` quick-start (dev sign-in via console link, outbox), `doc/scaffold.md` (DB URL follow-up closed), `.env.example`, and `openspec/config.yaml` context (auth conventions: `getActor` first, 404 for foreign data, purge steps)

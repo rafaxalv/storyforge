@@ -24,6 +24,8 @@ Planning: [PRD.md](../PRD.md) · [ARCHITECTURE.md](../ARCHITECTURE.md) · [EPICS
 
 **Logs:** stdout (coloured in dev, JSON in production) and `logs/app.log` when `LOG_FILE` is set (it is in `.env.example`). Level: `LOG_LEVEL` (`trace` … `silent`; `.env.example` uses `debug`). Follow one request with `grep '"requestId":"<id>"' logs/app.log`; the id is in the `x-request-id` response header. Details: [scaffold.md](scaffold.md#logs--debugging).
 
+**Sign in (dev):** open http://localhost:3000, enter any address, and copy the sign-in link from the dev-server terminal (`EMAIL_TRANSPORT=console`). Admins: list your address in `ADMIN_EMAILS`. Details: [auth.md](auth.md).
+
 **Claude:** `AI_CLIENT=fake` (default) replays `tests/fixtures/claude/`; `AI_CLIENT=anthropic` needs `ANTHROPIC_API_KEY` and costs money.
 
 ## Features
@@ -31,7 +33,7 @@ Planning: [PRD.md](../PRD.md) · [ARCHITECTURE.md](../ARCHITECTURE.md) · [EPICS
 | Doc | Epic | Status | Entrypoints | Files | One-liner |
 |-----|------|--------|-------------|-------|-----------|
 | [scaffold.md](scaffold.md) | E00 | final | `GET /api/health`, `npm run dev`, `npm run worker` | `src/server/`, `src/shared/framework.ts`, `src/worker.ts` | Toolchain, logging + request ids, health, worker, tests/CI, image, Claude seam |
-| [auth.md](auth.md) | E01 | draft | `/sign-in`, `/settings`, `/api/auth/*`, job `account.purge` | `src/server/auth/`, `src/app/(auth)/`, `src/app/(app)/`, `src/server/jobs/` | Sign-in (magic link, Google), sessions, actor/ownership helpers, account deletion + purge |
+| [auth.md](auth.md) | E01 | final | `/sign-in`, `/settings`, `/api/auth/*`, job `account.purge` | `src/server/auth/`, `src/app/(auth)/`, `src/app/(app)/`, `src/server/jobs/` | Sign-in (magic link, Google), sessions, actor/ownership helpers, account deletion + purge |
 
 Finding the right doc: `grep -l "<file, route, logger, event or env var>" doc/*.md` — every doc's header lists its `files`, `entrypoints`, `loggers`, `events`, `env`, `specs`, `keywords`. Behavior lives in `../openspec/specs/`, not here.
 
