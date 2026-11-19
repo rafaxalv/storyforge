@@ -34,7 +34,7 @@ Prerequisites: Postgres up (`docker compose up -d` / `docker-compose up -d`), `n
 | T8 | account-management: Rename | Settings → name "Rafael" → save; then empty name | Header shows Rafael; empty → validation message, name unchanged | playwright | pass (`tests/e2e/auth.spec.ts`: "Saved." and header updated; blank → "Enter a name") |
 | T9 | account-management: Delete + purge | Settings → Delete → type `DELETE` → confirm, with `npm run worker` running | `/goodbye`; user/session/account rows gone; worker logs `account.purge.step` + `account.purge.done` with the user id | playwright + console | pass (browser flow in e2e; with the worker running, the queued job 182bf885… was purged for that user id, `steps: 0` until later epics register steps) |
 | T10 | auth-session: Google | With real `GOOGLE_CLIENT_ID/SECRET` (and redirect URI `http://localhost:3000/api/auth/callback/google`), "Continue with Google" | Signed in; same account as the email sign-in for that address | manual | todo |
-| T11 | CI | Push `epic/e01-auth` (with the author's OK) | All CI jobs green | manual | todo |
+| T11 | CI | Push `epic/e01-auth` (with the author's OK) | All CI jobs green | manual | pass (2026-11-19, run 44602358504: `check` and `image` green; the first run failed the image build — `next build` typechecked `playwright.config.ts`, whose `tests/` import isn't in the image context — fixed by keeping test configs out of `.dockerignore`d context) |
 
 ## Observability checks
 

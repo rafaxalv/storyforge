@@ -91,6 +91,8 @@ Domain functions take `actor` first (see `updateDisplayName`). Route handlers ca
 | `MAIL_OUTBOX_DIR` | `logs/outbox` | For `outbox` |
 | `SMTP_URL` / `MAIL_FROM` | — / `storyforge <no-reply@localhost>` | For `smtp` (`smtp://` or `smtps://`) |
 
+All roles share one environment: the web server, the worker and `node dist/migrate.js` all validate these settings at startup (production requires `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `EMAIL_TRANSPORT=smtp` and `SMTP_URL`), so give every container the same env.
+
 ## Logs & debugging
 
 - **Happy path:** `auth.magic_link.requested` (`emailHash`, transport) → `mail.sent` → `auth.user.created` (first time) → `auth.sign_in` (`userId`, `method`) → … → `auth.sign_out`.
