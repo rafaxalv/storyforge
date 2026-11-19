@@ -31,6 +31,7 @@ Planning: [PRD.md](../PRD.md) · [ARCHITECTURE.md](../ARCHITECTURE.md) · [EPICS
 | Doc | Epic | Status | Entrypoints | Files | One-liner |
 |-----|------|--------|-------------|-------|-----------|
 | [scaffold.md](scaffold.md) | E00 | final | `GET /api/health`, `npm run dev`, `npm run worker` | `src/server/`, `src/shared/framework.ts`, `src/worker.ts` | Toolchain, logging + request ids, health, worker, tests/CI, image, Claude seam |
+| [auth.md](auth.md) | E01 | draft | `/sign-in`, `/settings`, `/api/auth/*`, job `account.purge` | `src/server/auth/`, `src/app/(auth)/`, `src/app/(app)/`, `src/server/jobs/` | Sign-in (magic link, Google), sessions, actor/ownership helpers, account deletion + purge |
 
 Finding the right doc: `grep -l "<file, route, logger, event or env var>" doc/*.md` — every doc's header lists its `files`, `entrypoints`, `loggers`, `events`, `env`, `specs`, `keywords`. Behavior lives in `../openspec/specs/`, not here.
 
