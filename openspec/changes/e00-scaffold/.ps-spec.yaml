@@ -1,2 +1,7 @@
 checkpoints:
   plan: { approved: 2026-11-18, notes: "approved as presented; Docker still to be installed locally" }
+review:
+  done: 2026-11-19
+  findings: 8 code-review + 24 simplify (4 angles, deduped to 13)
+  fixed: "7 code-review (pool error listener - crash confirmed live, CI NODE_ENV, static assets at debug, migrations in dist, LOG_LEVELS reuse, processSingleton, control-char test); simplify: one .env loader via @next/env, loggerOptionsFrom, startProcess for migrate + onShutdown, getClaude on validated env, version from package.json, single close listener, vitest extends, prod-deps image stage + no .next/cache, CI concurrency per branch"
+  deferred: "DB client reads process.env.DATABASE_URL -> E01; /api/health stays at info (spec); BuildKit cache mounts, CI caches for Playwright/.next, logger micro-optimisations, image size (~1 GB, mostly next) -> later; getDb/SCORE_MIN/MAX kept for E01/E04"

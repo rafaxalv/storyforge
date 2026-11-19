@@ -30,15 +30,9 @@ export interface RootLoggerOptions {
 }
 
 export function createRootLogger(opts: RootLoggerOptions): Logger {
-  const streams: pino.StreamEntry[] = [];
-  if (opts.stream) {
-    streams.push({ level: "trace", stream: opts.stream });
-  } else {
-    streams.push({
-      level: "trace",
-      stream: opts.pretty ? pretty({ colorize: true, sync: true }) : process.stdout,
-    });
-  }
+  const main =
+    opts.stream ?? (opts.pretty ? pretty({ colorize: true, sync: true }) : process.stdout);
+  const streams: pino.StreamEntry[] = [{ level: "trace", stream: main }];
   if (opts.file) {
     mkdirSync(dirname(opts.file), { recursive: true });
     streams.push({ level: "trace", stream: pino.destination({ dest: opts.file, sync: true }) });
@@ -59,18 +53,25 @@ export function createRootLogger(opts: RootLoggerOptions): Logger {
   );
 }
 
-function levelFromEnv(value: string | undefined): LevelWithSilent {
-  return LOG_LEVELS.find((l) => l === value) ?? "info";
+/**
+ * The one place that turns settings into logger options: level from LOG_LEVEL (default
+ * info), file from LOG_FILE, coloured output only in development (JSON otherwise).
+ */
+export function loggerOptionsFrom(src: {
+  NODE_ENV?: string;
+  LOG_LEVEL?: string;
+  LOG_FILE?: string;
+}): RootLoggerOptions {
+  return {
+    level: LOG_LEVELS.find((l) => l === src.LOG_LEVEL) ?? "info",
+    file: src.LOG_FILE || undefined,
+    pretty: (src.NODE_ENV ?? "development") === "development",
+  };
 }
 
 /** Used until startProcess() installs the configured root logger (and in tests). */
 function defaultRoot(): Logger {
-  const level = levelFromEnv(process.env.LOG_LEVEL);
-  return createRootLogger({
-    level,
-    file: process.env.LOG_FILE || undefined,
-    pretty: process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test",
-  });
+  return createRootLogger(loggerOptionsFrom(process.env));
 }
 
 /** One root logger per process, shared by the custom server and Next's bundles. */

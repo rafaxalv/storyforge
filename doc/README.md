@@ -6,10 +6,25 @@ Planning: [PRD.md](../PRD.md) · [ARCHITECTURE.md](../ARCHITECTURE.md) · [EPICS
 
 ## Quick start
 
-- Setup: `<cmd>`
-- Run: `<cmd>`
-- Tests: `<cmd>`
-- Logs: `<where>`; debug switch: `<env var>`
+**Prerequisites:** Node 22 (`.nvmrc`; with Homebrew's `node@22` add `/opt/homebrew/opt/node@22/bin` to `PATH`) and Docker (Docker Desktop, or colima + the `docker` / `docker-compose` CLIs). Commands below say `docker compose`; with Homebrew's standalone Compose use `docker-compose`.
+
+| Step | Command |
+|------|---------|
+| Configure | `cp .env.example .env` (local-only placeholder credentials) |
+| Start Postgres | `docker compose up -d` (creates `storyforge` and `storyforge_test`, port 127.0.0.1:5432) |
+| Install | `npm ci` |
+| Migrate | `npm run db:migrate` |
+| Run web (dev) | `npm run dev` → http://localhost:3000, health at `/api/health` |
+| Run worker (dev) | `npm run worker` |
+| Lint / types | `npm run lint && npm run typecheck` |
+| Tests | `npm run test:unit` (no Docker needed) · `npm test` (unit + integration, needs Postgres) |
+| E2E | `npx playwright install chromium` once, then `npm run build && npm run test:e2e` |
+| Production build | `npm run build` → `npm run start` (web) / `npm run worker:start` (worker); env comes from the process, `.env` is not loaded |
+| Image | `docker build -t storyforge .` → `docker run -e ROLE=web\|worker -e DATABASE_URL=… storyforge`; migrations: `docker run … storyforge node dist/migrate.js` |
+
+**Logs:** stdout (coloured in dev, JSON in production) and `logs/app.log` when `LOG_FILE` is set (it is in `.env.example`). Level: `LOG_LEVEL` (`trace` … `silent`; `.env.example` uses `debug`). Follow one request with `grep '"requestId":"<id>"' logs/app.log`; the id is in the `x-request-id` response header. Details: [scaffold.md](scaffold.md#logs--debugging).
+
+**Claude:** `AI_CLIENT=fake` (default) replays `tests/fixtures/claude/`; `AI_CLIENT=anthropic` needs `ANTHROPIC_API_KEY` and costs money.
 
 ## Features
 

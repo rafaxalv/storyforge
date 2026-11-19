@@ -1,6 +1,6 @@
 import { PgBoss } from "pg-boss";
 import { log } from "@/server/log";
-import { startProcess } from "@/server/startup";
+import { onShutdown, startProcess } from "@/server/startup";
 
 /** Worker role: runs background jobs from the pg-boss queue (no queues registered yet). */
 async function main(): Promise<void> {
@@ -22,16 +22,7 @@ async function main(): Promise<void> {
   }
   logger.info({ event: "worker.ready" }, "worker ready for jobs");
 
-  const stop = async (signal: string) => {
-    logger.info({ event: "worker.stop", signal }, "stopping worker");
-    try {
-      await boss.stop({ graceful: true, timeout: 10_000 });
-    } finally {
-      process.exit(0);
-    }
-  };
-  process.once("SIGTERM", () => void stop("SIGTERM"));
-  process.once("SIGINT", () => void stop("SIGINT"));
+  onShutdown(logger, "worker.stop", () => boss.stop({ graceful: true, timeout: 10_000 }));
 }
 
 void main();

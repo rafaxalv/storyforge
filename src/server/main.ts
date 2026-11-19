@@ -1,16 +1,14 @@
 import { createServer } from "node:http";
 import next from "next";
-import { getClaude } from "./ai/client";
 import { closeDb } from "./db/client";
 import { withRequestBoundary } from "./http";
 import { log } from "./log";
-import { startProcess } from "./startup";
+import { onShutdown, startProcess } from "./startup";
 
 /** Web role: Next.js behind the storyforge request boundary (request ids, request log). */
 async function main(): Promise<void> {
   const env = startProcess("web");
   const logger = log("http");
-  getClaude(); // logs which Claude client is active (debug)
 
   const app = next({ dev: env.NODE_ENV === "development", dir: process.cwd() });
   await app.prepare();
@@ -24,15 +22,10 @@ async function main(): Promise<void> {
     );
   });
 
-  const shutdown = (signal: string) => {
-    logger.info({ event: "server.stop", signal }, "shutting down");
-    server.close(() => {
-      void closeDb().finally(() => process.exit(0));
-    });
-    setTimeout(() => process.exit(0), 10_000).unref();
-  };
-  process.once("SIGTERM", () => shutdown("SIGTERM"));
-  process.once("SIGINT", () => shutdown("SIGINT"));
+  onShutdown(logger, "server.stop", async () => {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await closeDb();
+  });
 }
 
 main().catch((err: unknown) => {

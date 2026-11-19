@@ -7,7 +7,10 @@ import {
   fixtureKey,
   getClaude,
 } from "@/server/ai/client";
+import { parseEnv } from "@/server/env";
 import { captureLogs } from "../helpers";
+
+const DB = "postgres://u:p@127.0.0.1:5432/db";
 
 const params = {
   model: DEFAULT_MODEL,
@@ -20,16 +23,17 @@ describe("Claude seam", () => {
 
   it("defaults to FakeClaude", () => {
     captureLogs();
-    expect(getClaude({}).kind).toBe("fake");
-    expect(getClaude({ AI_CLIENT: "something-else" }).kind).toBe("fake");
+    expect(getClaude(parseEnv({ DATABASE_URL: DB })).kind).toBe("fake");
+    expect(() => parseEnv({ DATABASE_URL: DB, AI_CLIENT: "something-else" })).toThrow(/AI_CLIENT/);
   });
 
   it("uses the real client only when asked, and requires a key", () => {
     captureLogs();
-    expect(() => getClaude({ AI_CLIENT: "anthropic" })).toThrow(/ANTHROPIC_API_KEY/);
-    expect(
-      getClaude({ AI_CLIENT: "anthropic", ANTHROPIC_API_KEY: "sk-test-not-real" }),
-    ).toBeInstanceOf(AnthropicClaude);
+    expect(() => parseEnv({ DATABASE_URL: DB, AI_CLIENT: "anthropic" })).toThrow(
+      /ANTHROPIC_API_KEY/,
+    );
+    const env = parseEnv({ DATABASE_URL: DB, AI_CLIENT: "anthropic", ANTHROPIC_API_KEY: "sk-x" });
+    expect(getClaude(env)).toBeInstanceOf(AnthropicClaude);
   });
 
   it("replays a fixture and streams its text", async () => {

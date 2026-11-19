@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { requestContext, resolveRequestId } from "./context";
-import { log, type Logger } from "./log";
+import { log } from "./log";
 
 export type Handler = (req: IncomingMessage, res: ServerResponse) => Promise<void> | void;
 
@@ -18,27 +18,26 @@ export function isStaticAsset(route: string): boolean {
  * - writes exactly one `request` line when the response finishes or the client aborts;
  * - turns an unhandled error into a generic 500, with details only in the log.
  */
-export function withRequestBoundary(
-  handler: Handler,
-  getLogger: () => Logger = () => log("http"),
-): Handler {
+export function withRequestBoundary(handler: Handler): Handler {
   return (req, res) => {
-    const logger = getLogger();
+    const logger = log("http");
     const requestId = resolveRequestId(req.headers["x-request-id"]);
+    // The header copy is for Next.js code that reads headers(); server code uses the
+    // request context.
     req.headers["x-request-id"] = requestId;
     res.setHeader("x-request-id", requestId);
 
     const started = process.hrtime.bigint();
     const method = req.method ?? "GET";
     const route = (req.url ?? "/").split("?")[0] ?? "/";
-    let logged = false;
-    const writeRequestLine = (aborted: boolean) => {
-      if (logged) return;
-      logged = true;
-      const durationMs = Number((process.hrtime.bigint() - started) / 1_000_000n);
+    // 'close' fires once per response: after 'finish' normally, alone when the client aborts.
+    res.once("close", () => {
       // Static assets (JS/CSS chunks, favicon) are logged at debug so they don't bury
       // page and API requests at info.
       const level = isStaticAsset(route) ? "debug" : "info";
+      if (!logger.isLevelEnabled(level)) return;
+      const aborted = !res.writableFinished;
+      const durationMs = Number((process.hrtime.bigint() - started) / 1_000_000n);
       logger[level](
         {
           event: "request",
@@ -51,9 +50,7 @@ export function withRequestBoundary(
         },
         `${method} ${route} ${res.statusCode}`,
       );
-    };
-    res.once("finish", () => writeRequestLine(false));
-    res.once("close", () => writeRequestLine(!res.writableFinished));
+    });
 
     return requestContext.run({ requestId }, async () => {
       try {

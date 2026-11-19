@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
+import { getEnv, type Env } from "../env";
 import { log } from "../log";
 
 /** Default model for every Claude feature (ARCHITECTURE.md §7); overridable per feature later. */
@@ -139,16 +140,15 @@ export class FakeClaude implements ClaudeClient {
   }
 }
 
-/** Picks the client from AI_CLIENT (default "fake"). */
+/** Picks the client from the validated AI_CLIENT setting (default "fake"). */
 export function getClaude(
-  env: Readonly<Record<string, string | undefined>> = process.env,
+  env: Pick<Env, "AI_CLIENT" | "ANTHROPIC_API_KEY"> = getEnv(),
 ): ClaudeClient {
-  const kind = env.AI_CLIENT === "anthropic" ? "anthropic" : "fake";
-  log("ai").debug({ event: "ai.client", kind }, `Claude client: ${kind}`);
-  if (kind === "anthropic") {
-    const key = env.ANTHROPIC_API_KEY;
-    if (!key) throw new Error("ANTHROPIC_API_KEY is required when AI_CLIENT=anthropic");
-    return new AnthropicClaude(key);
+  log("ai").debug({ event: "ai.client", kind: env.AI_CLIENT }, `Claude client: ${env.AI_CLIENT}`);
+  if (env.AI_CLIENT === "anthropic") {
+    // parseEnv guarantees the key for "anthropic"; this guard only narrows the type.
+    if (!env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is required");
+    return new AnthropicClaude(env.ANTHROPIC_API_KEY);
   }
   return new FakeClaude();
 }

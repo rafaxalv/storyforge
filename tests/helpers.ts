@@ -1,5 +1,5 @@
 import { Writable } from "node:stream";
-import { existsSync } from "node:fs";
+import { loadEnv } from "@/server/env";
 import { createRootLogger, setRootLogger, type Logger } from "@/server/log";
 import type { LevelWithSilent } from "pino";
 
@@ -22,9 +22,9 @@ export function captureLogs(level: LevelWithSilent = "trace"): {
   return { lines, logger };
 }
 
-/** Test database URL: DATABASE_URL_TEST from the environment or .env. */
+/** Test database URL: DATABASE_URL_TEST from the environment or the .env files. */
 export function testDatabaseUrl(): string {
-  if (!process.env.DATABASE_URL_TEST && existsSync(".env")) process.loadEnvFile(".env");
+  loadEnv();
   const url = process.env.DATABASE_URL_TEST;
   if (!url) throw new Error("DATABASE_URL_TEST is not set (see .env.example)");
   return url;

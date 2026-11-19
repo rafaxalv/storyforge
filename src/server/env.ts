@@ -1,5 +1,9 @@
-import { existsSync } from "node:fs";
+import { createRequire } from "node:module";
 import { z } from "zod";
+
+// @next/env is a CommonJS bundle: Node's ESM loader can't see its named exports and
+// bundlers disagree on its default export, so it is loaded with require everywhere.
+const { loadEnvConfig } = createRequire(import.meta.url)("@next/env") as typeof import("@next/env");
 
 export const LOG_LEVELS = ["trace", "debug", "info", "warn", "error", "fatal", "silent"] as const;
 
@@ -10,7 +14,6 @@ const EnvSchema = z
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
     LOG_LEVEL: z.enum(LOG_LEVELS).default("info"),
     LOG_FILE: z.string().default(""),
-    APP_VERSION: z.string().optional(),
     AI_CLIENT: z.enum(["fake", "anthropic"]).default("fake"),
     ANTHROPIC_API_KEY: z.string().optional(),
   })
@@ -48,14 +51,27 @@ export function parseEnv(source: Readonly<Record<string, string | undefined>>): 
   return result.data;
 }
 
+const quiet = { info: () => undefined, error: () => undefined };
+let loaded = false;
+
+/**
+ * Loads `.env*` files into process.env exactly as Next.js does (`.env`, `.env.local`,
+ * `.env.<mode>`, ...; variables already set in the process win). Every entrypoint, test
+ * helper and the Playwright config use this, so they all see the same configuration as
+ * the Next.js app. In the Docker image there are no .env files, only the process env.
+ */
+export function loadEnv(): void {
+  if (loaded) return;
+  loaded = true;
+  loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production", quiet);
+}
+
 let cached: Env | undefined;
 
-/** Loads `.env` (outside production, when present) and validates process.env once. */
+/** Loads `.env*` files once and validates process.env once. */
 export function getEnv(): Env {
   if (cached) return cached;
-  if (process.env.NODE_ENV !== "production" && existsSync(".env")) {
-    process.loadEnvFile(".env");
-  }
+  loadEnv();
   cached = parseEnv(process.env);
   return cached;
 }

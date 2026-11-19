@@ -24,7 +24,7 @@ describe("infrastructure security policy", () => {
     const df = read("Dockerfile");
     expect(df).toMatch(/ARG NODE_IMAGE=node:[^\s@]+@sha256:[0-9a-f]{64}/);
     for (const from of df.match(/^FROM .+$/gm) ?? [])
-      expect(from).toMatch(/^FROM \$\{NODE_IMAGE\} AS \w+$/);
+      expect(from).toMatch(/^FROM \$\{NODE_IMAGE\} AS [\w-]+$/);
     const users = df.match(/^USER .+$/gm) ?? [];
     expect(users.at(-1)).toBe("USER node");
     expect(df).toMatch(/^HEALTHCHECK /m);

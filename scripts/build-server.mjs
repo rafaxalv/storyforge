@@ -2,9 +2,7 @@
 // the SQL migrations next to them so `node dist/migrate.js` finds dist/migrations.
 // Next.js itself and runtime libraries stay external (installed in node_modules).
 import { build } from "esbuild";
-import { cpSync, readFileSync } from "node:fs";
-
-const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+import { cpSync } from "node:fs";
 
 await build({
   entryPoints: {
@@ -20,7 +18,6 @@ await build({
   sourcemap: true,
   packages: "external",
   alias: { "@": "./src" },
-  define: { "process.env.STORYFORGE_BUILD_VERSION": JSON.stringify(pkg.version) },
   logLevel: "info",
 });
 

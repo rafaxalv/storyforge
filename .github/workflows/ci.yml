@@ -8,8 +8,10 @@ on:
 permissions:
   contents: read
 
+# One run per branch: a push and the pull_request event for the same branch share the
+# group (head_ref is the branch name on PRs), so the older run is cancelled.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
