@@ -15,6 +15,14 @@ async function main(): Promise<void> {
   const handle = app.getRequestHandler();
 
   const server = createServer(withRequestBoundary((req, res) => handle(req, res)));
+  // e.g. EADDRINUSE: one clear line and exit, instead of an uncaught exception.
+  server.once("error", (err) => {
+    logger.fatal(
+      { event: "server.start.failed", port: env.PORT, err },
+      `cannot listen on port ${env.PORT}`,
+    );
+    process.exit(1);
+  });
   server.listen(env.PORT, () => {
     logger.info(
       { event: "server.listening", port: env.PORT },
