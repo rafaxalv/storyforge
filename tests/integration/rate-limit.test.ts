@@ -9,7 +9,7 @@ beforeEach(clearOutbox);
 
 describe("auth-session: Sign-in attempts are rate limited", () => {
   it("Too many link requests: the 6th in 10 minutes gets 429 and no email", async () => {
-    captureLogs();
+    const { lines } = captureLogs();
     const ip = randomIp();
     const statuses: number[] = [];
     for (let i = 0; i < 6; i++) {
@@ -17,6 +17,10 @@ describe("auth-session: Sign-in attempts are rate limited", () => {
     }
     expect(statuses).toEqual([200, 200, 200, 200, 200, 429]);
     expect(await outbox()).toHaveLength(5);
+    expect(lines.find((l) => l.event === "auth.rate_limited")).toMatchObject({
+      level: "warn",
+      path: "/sign-in/magic-link",
+    });
     // Another client is not affected.
     expect((await requestLink("other@example.com", { ip: randomIp() })).status).toBe(200);
   });

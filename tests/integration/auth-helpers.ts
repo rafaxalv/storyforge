@@ -1,7 +1,7 @@
 import { readdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { sql } from "drizzle-orm";
-import { getAuth, type Auth } from "@/server/auth/auth";
+import { getAuth, handleAuthRequest, type Auth } from "@/server/auth/auth";
 import { getDb } from "@/server/db/client";
 import { baseUrl, getEnv } from "@/server/env";
 import { CLIENT_IP_HEADER } from "@/server/http";
@@ -67,13 +67,14 @@ export async function call(
   if (init.body !== undefined) headers.set("content-type", "application/json");
   if (init.cookie) headers.set("cookie", init.cookie);
   const url = path.startsWith("http") ? path : `${baseUrl()}/api/auth${path}`;
-  return auth.handler(
+  return handleAuthRequest(
     new Request(url, {
       method: init.method ?? (init.body === undefined ? "GET" : "POST"),
       headers,
       body: init.body === undefined ? undefined : JSON.stringify(init.body),
       redirect: "manual",
     }),
+    auth,
   );
 }
 

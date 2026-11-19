@@ -172,3 +172,25 @@ export type Auth = ReturnType<typeof createAuth>;
 export function getAuth(): Auth {
   return processSingleton("auth", createAuth);
 }
+
+/**
+ * Better Auth's HTTP handler plus the one thing it doesn't log itself: requests it rejects
+ * for rate limiting (`auth.rate_limited`, with the path and the retry delay).
+ */
+export async function handleAuthRequest(
+  request: Request,
+  auth: Auth = getAuth(),
+): Promise<Response> {
+  const response = await auth.handler(request);
+  if (response.status === 429) {
+    const path = new URL(request.url).pathname.replace(/^\/api\/auth/, "");
+    const retryAfterS =
+      Number(response.headers.get("x-retry-after") ?? response.headers.get("retry-after")) ||
+      undefined;
+    log("auth").warn(
+      { event: "auth.rate_limited", path, retryAfterS },
+      "auth request rate limited",
+    );
+  }
+  return response;
+}
