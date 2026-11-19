@@ -31,7 +31,7 @@
 
 - [x] 6.1 Implement `src/server/log.ts` (`log(name)`, root pino, multistream stdout + `LOG_FILE`, pretty in dev, JSON in production, `LOG_LEVEL`, redaction paths) and the request context (AsyncLocalStorage store with `requestId` and `jobId` slots, logger mixin); verify lines carry `module` and `requestId` in a manual run
 - [x] 6.2 Add request-id handling and the `request` line in the custom server (validate/reuse `x-request-id`, generate otherwise, set response header and incoming header, one line on finish/close with `requestId, method, route, status, durationMs`); verify with curl and `logs/app.log`
-- [ ] 6.3 Add `startup` lines for both roles, `request.error`, `health.db.failed`, `worker.*` and `ai.*` events as listed in design.md; verify each appears in a manual run (stop Postgres for the failure lines)
+- [x] 6.3 Add `startup` lines for both roles, `request.error`, `health.db.failed`, `worker.*` and `ai.*` events as listed in design.md; verify each appears in a manual run (stop Postgres for the failure lines)
 
 ## 7. Tests
 
@@ -39,7 +39,7 @@
 - [x] 7.2 Integration tests for every `service-health` scenario: health ok, health with unreachable DB (bad URL) → 503 without error details, request id reused / replaced (valid, too long, bad characters), one `request` line with the required fields and no cookie/authorization/body, `LOG_LEVEL=warn` suppresses `request` lines; verify green
 - [x] 7.3 Integration tests for the worker scenarios (ready with DB, exit non-zero without DB) by spawning the worker process; verify green
 - [x] 7.4 Security checks: env validation fails closed without leaking values; 500 response body is generic; redaction removes cookie and authorization; ESLint forbids `any`; a script check that compose ports bind to 127.0.0.1, Dockerfile runs as non-root and uses digest-pinned images, and CI actions are SHA-pinned with `contents: read`; verify all green
-- [ ] 7.5 Playwright e2e: home page loads and the response has an `x-request-id` header; `/api/health` returns 200 against the built app; verify `npm run test:e2e` green
+- [x] 7.5 Playwright e2e: home page loads and the response has an `x-request-id` header; `/api/health` returns 200 against the built app; verify `npm run test:e2e` green
 - [ ] 7.6 Run the full suite and every row of test-plan.md; record results in test-plan.md; verify all rows `pass`
 
 ## 8. Docs

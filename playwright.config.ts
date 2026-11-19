@@ -1,4 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
+import { existsSync } from "node:fs";
+
+// Locally the test database URL comes from .env; in CI it is set in the workflow.
+if (!process.env.DATABASE_URL_TEST && existsSync(".env")) process.loadEnvFile(".env");
 
 const PORT = 3200;
 
