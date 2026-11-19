@@ -1,0 +1,19 @@
+# Never send secrets, VCS data or local artefacts to the build context
+.env
+.env.*
+!.env.example
+.git
+.github
+.claude
+node_modules
+.next
+dist
+logs
+tests
+test-results
+playwright-report
+coverage
+openspec
+doc
+*.md
+docker-compose.yml

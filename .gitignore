@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# build output
+.next/
+dist/
+next-env.d.ts
+*.tsbuildinfo
+
+# env (only the example is committed)
+.env
+.env.*
+!.env.example
+
+# logs and test output
+logs/
+test-results/
+playwright-report/
+coverage/
+
+# OS / editor
+.DS_Store

@@ -7,15 +7,18 @@ context: |
   lexicon; public library = admin-curated public-domain reference books, style studies, texture profiles. Claude features
   run as jobs producing proposals the author accepts. Keep cowriter vocabulary. Source of truth: PRD.md and ARCHITECTURE.md.
   Stack: TypeScript strict, Node 22, Next.js 15 App Router + React 19, TipTap 2, PostgreSQL 16 + Drizzle ORM,
-  Auth.js v5 (email magic link + Google), Zod at every server boundary, pg-boss jobs, S3-compatible storage (MinIO locally),
+  Auth.js v5 (email magic link + Google), Zod at every server boundary, pg-boss jobs, S3-compatible storage (image chosen in E03),
   @anthropic-ai/sdk with model claude-opus-5-5 (model/effort per feature via env).
-  Deploy: one Docker image with two roles (web, worker), managed Postgres; local = docker compose (Postgres, MinIO) + npm run dev / npm run worker.
+  Deploy: one Docker image with two roles (ROLE=web|worker) plus `node dist/migrate.js`, managed Postgres; local = docker compose (Postgres) + npm run dev / npm run worker.
+  Runtime shape (E00): custom Node server (src/server/main.ts) wraps Next.js; every entrypoint calls startProcess(role) (src/server/startup.ts);
+  env = getEnv() (Zod, .env* loaded like Next); process-wide state via processSingleton (src/server/singleton.ts); Claude only via getClaude() (FakeClaude by default).
   Conventions: only src/server/<module> touches the DB or Claude; every domain function takes `actor` and enforces ownership;
   user text in prompts is delimited and treated as data, never instructions.
   Logging: pino via log(name) -> child logger, names storyforge:<module>[:<sub>]; requestId from AsyncLocalStorage on every line;
   jobs carry jobId + originating requestId; LOG_LEVEL env (debug locally); never log manuscript or library text.
   Tests: Vitest unit + integration (real Postgres), Playwright e2e; Claude replaced by FakeClaude replaying tests/fixtures/claude/.
-  Commands: npm test, npm run test:e2e, npm run lint, npm run typecheck.
+  Commands: npm run lint, npm run typecheck, npm run test:unit (no Docker), npm test (unit + integration, needs Postgres),
+  npm run build && npm run test:e2e. Feature docs: doc/<slug>.md, index doc/README.md.
 
 # Project context (optional)
 # Add only constraints that should guide OpenSpec artifacts and workflows.
