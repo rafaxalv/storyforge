@@ -106,7 +106,7 @@ sequenceDiagram
 - **Follow one request:** take `x-request-id` from the response (or send your own) and `grep '"requestId":"<id>"' logs/app.log`. Every line written while handling it, including inside Next route handlers, carries the id.
 - **Debug level:** `LOG_LEVEL=debug npm run dev` (static asset requests, `ai.client`).
 - **Never logged:** cookies, `authorization`, request bodies, query strings, API keys (redaction in `src/server/log.ts`; covered by tests).
-- **Tools:** `http` (curl with `-H 'x-request-id: …'`) for the web role; `console` for worker and migrate. Recipes in `openspec/changes/e00-scaffold/test-plan.md` (after close, under `openspec/changes/archive/`).
+- **Tools:** `http` (curl with `-H 'x-request-id: …'`) for the web role; `console` for worker and migrate. Recipes in `openspec/changes/archive/2026-11-19-e00-scaffold/test-plan.md`.
 
 ## How to run & test
 
@@ -125,6 +125,6 @@ See the quick-start table in [README.md](README.md#quick-start). In short: `dock
 
 ## References
 
-- Behavior contract: `openspec/specs/service-health/spec.md` (after archive)
-- Change: `openspec/changes/e00-scaffold/` (→ `openspec/changes/archive/<date>-e00-scaffold/` after close)
+- Behavior contract: `openspec/specs/service-health/spec.md`
+- Change: `openspec/changes/archive/2026-11-19-e00-scaffold/`
 - PRD: PRD.md §11 Environments & deployment, §12 Observability expectations, §13 Testing strategy; ARCHITECTURE.md §2, §3, §8–§10

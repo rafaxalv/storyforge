@@ -1,5 +1,6 @@
 checkpoints:
   plan: { approved: 2026-11-18, notes: "approved as presented; Docker still to be installed locally" }
+  validate: { approved: 2026-11-19, notes: "approved after local health check; CI green on 8b9decb (run 44582762155)" }
 review:
   done: 2026-11-19
   findings: 8 code-review + 24 simplify (4 angles, deduped to 13)
