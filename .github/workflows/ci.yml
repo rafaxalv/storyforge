@@ -29,8 +29,9 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U storyforge -d storyforge_test"
           --health-interval 5s --health-timeout 3s --health-retries 10
+    # NODE_ENV is not set job-wide: Vitest sets "test" itself, the build must run as
+    # production (like the image), and Playwright's web server sets its own.
     env:
-      NODE_ENV: test
       DATABASE_URL: postgres://storyforge:ci-only-password@127.0.0.1:5432/storyforge_test
       DATABASE_URL_TEST: postgres://storyforge:ci-only-password@127.0.0.1:5432/storyforge_test
       LOG_LEVEL: info
@@ -56,6 +57,8 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+        env:
+          NODE_ENV: production
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       - name: End-to-end tests

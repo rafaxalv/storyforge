@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import { processSingleton } from "./singleton";
 
 export interface RequestContext {
   requestId: string;
@@ -6,14 +7,12 @@ export interface RequestContext {
   jobId?: string;
 }
 
-// The custom server (bundled by esbuild) and Next.js route handlers (bundled by Next)
-// load separate copies of this module. Keeping the store on globalThis gives both
-// copies the same AsyncLocalStorage, so the request id reaches route-handler logs.
-const KEY = Symbol.for("storyforge.requestContext");
-type Holder = { [KEY]?: AsyncLocalStorage<RequestContext> };
-
-export const requestContext: AsyncLocalStorage<RequestContext> = ((globalThis as Holder)[KEY] ??=
-  new AsyncLocalStorage<RequestContext>());
+// Shared by the custom server and Next's route bundles, so the request id reaches
+// route-handler logs (see processSingleton).
+export const requestContext: AsyncLocalStorage<RequestContext> = processSingleton(
+  "requestContext",
+  () => new AsyncLocalStorage<RequestContext>(),
+);
 
 export function currentContext(): RequestContext | undefined {
   return requestContext.getStore();

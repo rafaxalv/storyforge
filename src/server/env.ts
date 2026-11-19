@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { z } from "zod";
 
-const LOG_LEVELS = ["trace", "debug", "info", "warn", "error", "fatal", "silent"] as const;
+export const LOG_LEVELS = ["trace", "debug", "info", "warn", "error", "fatal", "silent"] as const;
 
 const EnvSchema = z
   .object({

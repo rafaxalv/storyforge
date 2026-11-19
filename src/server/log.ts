@@ -3,6 +3,8 @@ import { dirname } from "node:path";
 import pino, { type Logger, type LevelWithSilent } from "pino";
 import pretty from "pino-pretty";
 import { currentContext } from "./context";
+import { LOG_LEVELS } from "./env";
+import { processSingleton, setProcessSingleton } from "./singleton";
 
 export type { Logger };
 
@@ -57,24 +59,11 @@ export function createRootLogger(opts: RootLoggerOptions): Logger {
   );
 }
 
-// One root logger per process, shared by the esbuild-bundled server and Next's bundles.
-const KEY = Symbol.for("storyforge.rootLogger");
-type Holder = { [KEY]?: Logger };
-
-const LEVELS: readonly LevelWithSilent[] = [
-  "trace",
-  "debug",
-  "info",
-  "warn",
-  "error",
-  "fatal",
-  "silent",
-];
-
 function levelFromEnv(value: string | undefined): LevelWithSilent {
-  return LEVELS.find((l) => l === value) ?? "info";
+  return LOG_LEVELS.find((l) => l === value) ?? "info";
 }
 
+/** Used until startProcess() installs the configured root logger (and in tests). */
 function defaultRoot(): Logger {
   const level = levelFromEnv(process.env.LOG_LEVEL);
   return createRootLogger({
@@ -84,13 +73,14 @@ function defaultRoot(): Logger {
   });
 }
 
+/** One root logger per process, shared by the custom server and Next's bundles. */
 export function rootLogger(): Logger {
-  return ((globalThis as Holder)[KEY] ??= defaultRoot());
+  return processSingleton("rootLogger", defaultRoot);
 }
 
 /** Replaces the process root logger (startup configuration and tests). */
 export function setRootLogger(logger: Logger): void {
-  (globalThis as Holder)[KEY] = logger;
+  setProcessSingleton("rootLogger", logger);
 }
 
 /** Named module logger: `log("health")` writes `module: "storyforge:health"`. */

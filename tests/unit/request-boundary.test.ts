@@ -1,6 +1,7 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { resolveRequestId } from "@/server/context";
 import { withRequestBoundary } from "@/server/http";
 import { log } from "@/server/log";
 import { captureLogs } from "../helpers";
@@ -47,17 +48,10 @@ describe("service-health: request correlation", () => {
     ["missing", undefined],
     ["too long", "a".repeat(65)],
     ["bad characters", "bad id!"],
-    ["log-injection attempt", 'x"}\n{"level":"fatal'],
+    ["quote/brace", 'x"}{"level":"fatal'],
   ])("replaces a %s id (Missing or malformed id is replaced)", async (_label, incoming) => {
     const headers: Record<string, string> = {};
-    if (incoming !== undefined) {
-      try {
-        new Headers({ "x-request-id": incoming });
-        headers["x-request-id"] = incoming;
-      } catch {
-        headers["x-request-id"] = "bad id!"; // fetch refuses newlines; still malformed
-      }
-    }
+    if (incoming !== undefined) headers["x-request-id"] = incoming;
     const res = await fetch(`${base}/hello`, { headers });
     await settle();
     const id = res.headers.get("x-request-id") ?? "";
@@ -65,9 +59,31 @@ describe("service-health: request correlation", () => {
     expect(id).not.toBe(incoming);
     expect(requestLines()[0]?.requestId).toBe(id);
   });
+
+  // HTTP clients refuse to send control characters, so the parser is tested directly.
+  it.each(['x"}\n{"level":"fatal"', "a\rb", "tab\tid", "nul\u0000id", ["first-ok", "second"]])(
+    "never reuses ids with control characters or lists (%j)",
+    (incoming) => {
+      const id = resolveRequestId(incoming);
+      if (Array.isArray(incoming)) {
+        expect(id).toBe("first-ok");
+      } else {
+        expect(id).not.toBe(incoming);
+        expect(id).toMatch(/^[0-9a-f-]{36}$/);
+      }
+    },
+  );
 });
 
 describe("service-health: request log line", () => {
+  it("logs static asset requests at debug, pages and API at info", async () => {
+    await fetch(`${base}/_next/static/chunks/app.js`);
+    await fetch(`${base}/api/thing`);
+    await settle();
+    const levels = Object.fromEntries(requestLines().map((l) => [l.route, l.level]));
+    expect(levels).toEqual({ "/_next/static/chunks/app.js": "debug", "/api/thing": "info" });
+  });
+
   it("writes exactly one request line with the required fields (Successful request logged)", async () => {
     await fetch(`${base}/hello?token=should-not-appear`, {
       method: "POST",

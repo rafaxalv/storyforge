@@ -6,6 +6,10 @@ export type Handler = (req: IncomingMessage, res: ServerResponse) => Promise<voi
 
 const GENERIC_500 = JSON.stringify({ error: "Internal server error" });
 
+export function isStaticAsset(route: string): boolean {
+  return route.startsWith("/_next/static/") || route === "/favicon.ico";
+}
+
 /**
  * Wraps a request handler with the storyforge request boundary:
  * - resolves the request id (reuse a well-formed `x-request-id`, else generate),
@@ -32,7 +36,10 @@ export function withRequestBoundary(
       if (logged) return;
       logged = true;
       const durationMs = Number((process.hrtime.bigint() - started) / 1_000_000n);
-      logger.info(
+      // Static assets (JS/CSS chunks, favicon) are logged at debug so they don't bury
+      // page and API requests at info.
+      const level = isStaticAsset(route) ? "debug" : "info";
+      logger[level](
         {
           event: "request",
           requestId,
