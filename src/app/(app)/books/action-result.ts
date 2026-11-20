@@ -72,7 +72,8 @@ export function str(form: FormData, key: string): string {
   return typeof v === "string" ? v : "";
 }
 
+/** A number field; anything else becomes NaN, which the domain's checks reject. */
 export function int(form: FormData, key: string): number {
-  const n = Number(form.get(key));
-  return Number.isInteger(n) ? n : -1;
+  const v = form.get(key);
+  return typeof v === "string" && v.trim() !== "" ? Number(v) : Number.NaN;
 }

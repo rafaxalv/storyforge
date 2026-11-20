@@ -130,10 +130,10 @@ export async function movePart(
   direction: unknown,
 ): Promise<void> {
   const dir = MoveDirection.parse(direction);
-  await withBook(actor, bookId, "books.movePart", async (tx, owned) => {
+  await withBook(actor, bookId, "books.movePart", async (tx, owned, ctx) => {
     const p = await partIn(tx, owned.id, partId);
     const order = moveWithin(await activePartIds(tx, owned.id), p.id, dir);
-    if (!order) return;
+    if (!order) return ctx.unchanged();
     await writeOrder(tx, part, order);
     booksLog().info(
       {
@@ -150,9 +150,9 @@ export async function movePart(
 
 /** Removes an empty part (restorable). A part with active chapters can't be removed. */
 export async function removePart(actor: Actor, bookId: unknown, partId: unknown): Promise<void> {
-  await withBook(actor, bookId, "books.removePart", async (tx, owned) => {
+  await withBook(actor, bookId, "books.removePart", async (tx, owned, ctx) => {
     const p = await partIn(tx, owned.id, partId);
-    if (p.removedAt) return;
+    if (p.removedAt) return ctx.unchanged();
     const active = (await activeChapterIds(tx, owned.id, p.id)).length;
     if (active > 0) {
       booksLog().warn(
@@ -177,9 +177,9 @@ export async function removePart(actor: Actor, bookId: unknown, partId: unknown)
 }
 
 export async function restorePart(actor: Actor, bookId: unknown, partId: unknown): Promise<void> {
-  await withBook(actor, bookId, "books.restorePart", async (tx, owned) => {
+  await withBook(actor, bookId, "books.restorePart", async (tx, owned, ctx) => {
     const p = await partIn(tx, owned.id, partId);
-    if (!p.removedAt) return;
+    if (!p.removedAt) return ctx.unchanged();
     const position = (await activePartIds(tx, owned.id)).length;
     await tx.update(part).set({ removedAt: null, position }).where(eq(part.id, p.id));
     booksLog().info(
@@ -200,8 +200,7 @@ export async function createChapter(
   return withBook(actor, bookId, "books.createChapter", async (tx, owned) => {
     const titles = await titlesFor(tx, owned.id, input.titles);
     const partId = await targetPart(tx, owned.id, input.partId);
-    const [n] = await tx.select({ n: count() }).from(chapter).where(eq(chapter.bookId, owned.id));
-    checkLimit(n?.n ?? 0, LIMITS.chapters, "chapters", "chapters");
+    // No chapter count limit: unique codes already cap a book at 110 chapters.
     const position = (await activeChapterIds(tx, owned.id, partId)).length;
     try {
       const [row] = await tx
@@ -261,11 +260,11 @@ export async function moveChapter(
   direction: unknown,
 ): Promise<void> {
   const dir = MoveDirection.parse(direction);
-  await withBook(actor, bookId, "books.moveChapter", async (tx, owned) => {
+  await withBook(actor, bookId, "books.moveChapter", async (tx, owned, ctx) => {
     const c = await chapterIn(tx, owned.id, chapterId);
     if (c.removedAt) throw new NotFound();
     const order = moveWithin(await activeChapterIds(tx, owned.id, c.partId), c.id, dir);
-    if (!order) return;
+    if (!order) return ctx.unchanged();
     await writeOrder(tx, chapter, order);
     booksLog().info(
       {
@@ -290,11 +289,11 @@ export async function moveChapterToPart(
   chapterId: unknown,
   partId: unknown,
 ): Promise<void> {
-  await withBook(actor, bookId, "books.moveChapterToPart", async (tx, owned) => {
+  await withBook(actor, bookId, "books.moveChapterToPart", async (tx, owned, ctx) => {
     const c = await chapterIn(tx, owned.id, chapterId);
     if (c.removedAt) throw new NotFound();
     const target = await targetPart(tx, owned.id, partId);
-    if (target === c.partId) return;
+    if (target === c.partId) return ctx.unchanged();
     const position = (await activeChapterIds(tx, owned.id, target)).length;
     await tx.update(chapter).set({ partId: target, position }).where(eq(chapter.id, c.id));
     await writeOrder(tx, chapter, await activeChapterIds(tx, owned.id, c.partId));
@@ -319,9 +318,9 @@ export async function removeChapter(
   bookId: unknown,
   chapterId: unknown,
 ): Promise<void> {
-  await withBook(actor, bookId, "books.removeChapter", async (tx, owned) => {
+  await withBook(actor, bookId, "books.removeChapter", async (tx, owned, ctx) => {
     const c = await chapterIn(tx, owned.id, chapterId);
-    if (c.removedAt) return;
+    if (c.removedAt) return ctx.unchanged();
     await tx.update(chapter).set({ removedAt: dbNow() }).where(eq(chapter.id, c.id));
     await writeOrder(tx, chapter, await activeChapterIds(tx, owned.id, c.partId));
     booksLog().info(
@@ -343,9 +342,9 @@ export async function restoreChapter(
   bookId: unknown,
   chapterId: unknown,
 ): Promise<void> {
-  await withBook(actor, bookId, "books.restoreChapter", async (tx, owned) => {
+  await withBook(actor, bookId, "books.restoreChapter", async (tx, owned, ctx) => {
     const c = await chapterIn(tx, owned.id, chapterId);
-    if (!c.removedAt) return;
+    if (!c.removedAt) return ctx.unchanged();
     let partId = c.partId;
     if (partId) {
       const [p] = await tx

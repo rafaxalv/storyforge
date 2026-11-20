@@ -3,11 +3,20 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { Editor } from "@tiptap/react";
 import { LazyEditor } from "@/client/lazy-editor";
 import { plainText, type RichDoc } from "@/shared/rich-text";
 import { loadConceptAction, saveConceptAction } from "./actions";
 
 const AUTOSAVE_MS = 1_000;
+
+/**
+ * The last Concept save sent from this tab. An editor that leaves the screen sends its final
+ * save while the next one (the panel → the Concept page) is already loading; the newcomer
+ * waits for that save and catches up to its version instead of starting from an older one.
+ */
+let lastSave: Promise<unknown> = Promise.resolve();
+let savesInFlight = 0;
 
 type Status = "saved" | "dirty" | "saving" | "error" | "conflict";
 
@@ -44,21 +53,27 @@ export function ConceptEditor({
   const inFlight = useRef(false);
   const stopped = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const editor = useRef<Editor | null>(null);
 
   const save = useCallback(async () => {
     clearTimeout(timer.current);
     if (stopped.current || inFlight.current || edits.current === savedEdits.current) return;
     inFlight.current = true;
     const sending = edits.current;
+    let failed = false;
     setStatus("saving");
+    savesInFlight += 1;
     try {
-      const result = await saveConceptAction(bookId, latest.current, version.current);
+      const pending = saveConceptAction(bookId, latest.current, version.current);
+      lastSave = pending.catch(() => undefined);
+      const result = await pending;
       if (result.conflict) {
         stopped.current = true;
         setStatus("conflict");
         return;
       }
       if (result.error || result.version === undefined) {
+        failed = true;
         setStatus("error");
         return;
       }
@@ -66,11 +81,15 @@ export function ConceptEditor({
       savedEdits.current = sending;
       setStatus(edits.current === sending ? "saved" : "dirty");
     } catch {
+      failed = true;
       setStatus("error");
     } finally {
       inFlight.current = false;
+      savesInFlight -= 1;
     }
-    if (!stopped.current && edits.current !== savedEdits.current)
+    // Edits made while this save was in flight follow it. After a failure, the next edit
+    // (not a timer) tries again, so a lasting error doesn't resend every second.
+    if (!failed && !stopped.current && edits.current !== savedEdits.current)
       timer.current = setTimeout(() => void save(), AUTOSAVE_MS);
   }, [bookId]);
 
@@ -84,6 +103,24 @@ export function ConceptEditor({
       timer.current = setTimeout(() => void save(), AUTOSAVE_MS);
     },
     [save],
+  );
+
+  // Catch up with a save another editor of this tab sent just before this one mounted.
+  const onReady = useCallback(
+    (e: Editor) => {
+      editor.current = e;
+      if (savesInFlight === 0) return;
+      void lastSave
+        .then(() => loadConceptAction(bookId))
+        .then((r) => {
+          if (!r.body || r.version === undefined || r.version <= version.current) return;
+          if (edits.current !== 0) return; // the author already typed here; keep their text
+          version.current = r.version;
+          latest.current = r.body;
+          editor.current?.commands.setContent(r.body, { emitUpdate: false });
+        });
+    },
+    [bookId],
   );
 
   useEffect(() => {
@@ -108,7 +145,13 @@ export function ConceptEditor({
 
   return (
     <div className="stack">
-      <LazyEditor initial={initial} label="Concept" onChange={onChange} minHeight="16rem" />
+      <LazyEditor
+        initial={initial}
+        label="Concept"
+        onChange={onChange}
+        onReady={onReady}
+        minHeight="16rem"
+      />
       <div className="row">
         <p
           id={`${idPrefix}-status`}

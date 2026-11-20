@@ -10,7 +10,7 @@ import {
 import type { Actor } from "../auth/actor";
 import { getDb } from "../db/client";
 import { book, concept } from "../db/schema";
-import { Conflict, booksLog, ownedBook, dbNow } from "./core";
+import { Conflict, Version, booksLog, dbNow, ownedBook } from "./core";
 
 export interface ConceptDoc {
   body: RichDoc;
@@ -37,6 +37,7 @@ export async function saveConcept(
 ): Promise<{ version: number }> {
   const started = performance.now();
   const owned = await ownedBook(actor, bookId, "books.saveConcept");
+  const expected = Version.parse(version);
   let doc: RichDoc;
   try {
     doc = parseRichText(body, { maxChars: CONCEPT_MAX_CHARS });
@@ -53,7 +54,7 @@ export async function saveConcept(
     const [saved] = await tx
       .update(concept)
       .set({ body: doc, version: sql`${concept.version} + 1`, updatedAt: now })
-      .where(and(eq(concept.bookId, owned.id), eq(concept.version, version)))
+      .where(and(eq(concept.bookId, owned.id), eq(concept.version, expected)))
       .returning({ version: concept.version });
     if (saved) await tx.update(book).set({ updatedAt: now }).where(eq(book.id, owned.id));
     return saved;
@@ -65,7 +66,7 @@ export async function saveConcept(
         userId: actor.userId,
         bookId: owned.id,
         target: "concept",
-        expected: version,
+        expected,
       },
       "concept changed elsewhere",
     );

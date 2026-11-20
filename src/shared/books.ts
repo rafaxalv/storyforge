@@ -10,7 +10,6 @@ export const LIMITS = {
   rules: 100,
   labels: 20,
   parts: 30,
-  chapters: 200,
 } as const;
 
 export const TITLE_MAX = 200;

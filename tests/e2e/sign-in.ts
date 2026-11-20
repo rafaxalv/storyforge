@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, type Page } from "@playwright/test";
+import { randomIp } from "../constants";
 import { extractLink } from "../link";
 import { SINK_DIR } from "./smtp-sink";
 
@@ -47,6 +48,5 @@ export async function signInAs(page: Page, email: string, next = "/"): Promise<v
 
 /** Gives this browser context its own client address for the server's rate limits. */
 export async function asNewClient(page: Page): Promise<void> {
-  const ip = `10.${[1, 2, 3].map(() => Math.floor(Math.random() * 250)).join(".")}`;
-  await page.context().setExtraHTTPHeaders({ "x-forwarded-for": ip });
+  await page.context().setExtraHTTPHeaders({ "x-forwarded-for": randomIp() });
 }

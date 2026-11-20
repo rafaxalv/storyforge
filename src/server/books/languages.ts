@@ -82,11 +82,11 @@ export async function moveLanguage(
   direction: unknown,
 ): Promise<void> {
   const dir = MoveDirection.parse(direction);
-  await withBook(actor, bookId, "books.moveLanguage", async (tx, owned) => {
+  await withBook(actor, bookId, "books.moveLanguage", async (tx, owned, ctx) => {
     const lang = await languageIn(tx, owned.id, languageId);
     const ids = (await languagesOf(tx, owned.id)).map((l) => l.id);
     const order = moveWithin(ids, lang.id, dir);
-    if (!order) return;
+    if (!order) return ctx.unchanged();
     await writeOrder(tx, bookLanguage, order);
     booksLog().info(
       {
@@ -106,9 +106,9 @@ export async function setWrittenFirst(
   bookId: unknown,
   languageId: unknown,
 ): Promise<void> {
-  await withBook(actor, bookId, "books.setWrittenFirst", async (tx, owned) => {
+  await withBook(actor, bookId, "books.setWrittenFirst", async (tx, owned, ctx) => {
     const lang = await languageIn(tx, owned.id, languageId);
-    if (lang.writtenFirst) return;
+    if (lang.writtenFirst) return ctx.unchanged();
     await tx
       .update(bookLanguage)
       .set({ writtenFirst: false })

@@ -43,12 +43,13 @@ export function idOf(value: unknown): string {
   return parsed.data;
 }
 
-export interface OwnedBook {
-  id: string;
-  ownerId: string;
-  title: string;
-  version: number;
-}
+export type OwnedBook = typeof book.$inferSelect;
+
+/** Expected version of a versioned save, as the client sent it. */
+export const Version = z
+  .number({ error: "Reload the page and try again." })
+  .int("Reload the page and try again.")
+  .min(1, "Reload the page and try again.");
 
 /**
  * The ownership check: the book must exist and belong to the actor. Missing, malformed and
@@ -63,12 +64,7 @@ export async function ownedBook(
 ): Promise<OwnedBook> {
   const id = Uuid.safeParse(bookId);
   const db = opts.tx ?? getDb();
-  const query = id.success
-    ? db
-        .select({ id: book.id, ownerId: book.ownerId, title: book.title, version: book.version })
-        .from(book)
-        .where(eq(book.id, id.data))
-    : null;
+  const query = id.success ? db.select().from(book).where(eq(book.id, id.data)) : null;
   const [row] = query ? await (opts.lock ? query.for("update") : query) : [];
   if (!row) {
     log("access").warn(
@@ -84,17 +80,26 @@ export async function ownedBook(
 /** The database's clock: every timestamp comes from one clock (the app's may drift). */
 export const dbNow = () => sql<Date>`now()`;
 
-/** Runs `fn` in a transaction after locking the actor's book. */
+export interface EditContext {
+  /** Marks the call as a no-op (an edge move, an item already in that state). */
+  unchanged(): void;
+}
+
+/**
+ * Runs `fn` in a transaction after locking the actor's book, then marks the book as changed
+ * (its place on the home page) unless `fn` reported a no-op.
+ */
 export function withBook<T>(
   actor: Actor,
   bookId: unknown,
   op: string,
-  fn: (tx: Tx, owned: OwnedBook) => Promise<T>,
+  fn: (tx: Tx, owned: OwnedBook, ctx: EditContext) => Promise<T>,
 ): Promise<T> {
   return getDb().transaction(async (tx) => {
     const owned = await ownedBook(actor, bookId, op, { tx, lock: true });
-    const result = await fn(tx, owned);
-    await tx.update(book).set({ updatedAt: dbNow() }).where(eq(book.id, owned.id));
+    let changed = true;
+    const result = await fn(tx, owned, { unchanged: () => void (changed = false) });
+    if (changed) await tx.update(book).set({ updatedAt: dbNow() }).where(eq(book.id, owned.id));
     return result;
   });
 }

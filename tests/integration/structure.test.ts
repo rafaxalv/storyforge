@@ -211,22 +211,6 @@ describe("book-structure: Author can manage chapters", () => {
     await restoreChapter(author, id, c);
     expect(await codesIn(author, id)).toMatchObject({ parts: [], unparted: ["01"] });
   });
-
-  it("Chapter limit", async () => {
-    const author = await makeAuthor();
-    const id = await makeBook(author);
-    await getDb()
-      .insert(chapter)
-      .values(
-        Array.from({ length: 200 }, (_, i) => ({
-          bookId: id,
-          code: `X${i}`,
-          titles: { EN: "x" },
-          position: i,
-        })),
-      );
-    await rejects(() => ch(author, id, "01"), BookValidationError);
-  });
 });
 
 describe("book-structure: Reordering never changes codes", () => {

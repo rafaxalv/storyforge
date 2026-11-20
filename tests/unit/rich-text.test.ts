@@ -67,6 +67,30 @@ describe("book-profile: Concept is rich text with a fixed set of formats", () =>
     ["raw HTML as a node", doc({ type: "html", content: "<img onerror=alert(1)>" })],
     ["heading level 4", doc({ type: "heading", attrs: { level: 4 }, content: [t("x")] })],
     ["a nested doc", doc(doc(p(t("x"))))],
+    ["text directly in the doc", doc(t("x"))],
+    ["a list item outside a list", doc({ type: "listItem", content: [p(t("x"))] })],
+    ["a paragraph inside a paragraph", doc(p(p(t("x"))))],
+    [
+      "a heading inside a heading",
+      doc({ type: "heading", attrs: { level: 1 }, content: [p(t("x"))] }),
+    ],
+    ["a paragraph in a list (not in an item)", doc({ type: "bulletList", content: [p(t("x"))] })],
+    ["an empty list", doc({ type: "bulletList", content: [] })],
+    [
+      "a list item without a paragraph first",
+      doc({
+        type: "bulletList",
+        content: [
+          {
+            type: "listItem",
+            content: [
+              { type: "bulletList", content: [{ type: "listItem", content: [p(t("x"))] }] },
+            ],
+          },
+        ],
+      }),
+    ],
+    ["content under a hard break", doc(p({ type: "hardBreak", content: [t("x")] }))],
     ["text without text", doc(p({ type: "text" }))],
     ["content that is not an array", doc({ type: "paragraph", content: "x" })],
     ["a string that is not JSON", "<p>hello</p>"],

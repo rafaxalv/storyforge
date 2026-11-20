@@ -16,7 +16,15 @@ import type { Actor } from "../auth/actor";
 import { getDb } from "../db/client";
 import { book, bookLanguage, concept, standingRule, user } from "../db/schema";
 import { log } from "../log";
-import { BookValidationError, Conflict, booksLog, languagesOf, ownedBook, dbNow } from "./core";
+import {
+  BookValidationError,
+  Conflict,
+  booksLog,
+  languagesOf,
+  ownedBook,
+  dbNow,
+  Version,
+} from "./core";
 
 export interface BookSummary {
   id: string;
@@ -97,18 +105,16 @@ export interface BookProfile extends BookHeader {
 }
 
 export async function getProfile(actor: Actor, bookId: unknown): Promise<BookProfile> {
-  const owned = await ownedBook(actor, bookId, "books.getProfile");
+  const row = await ownedBook(actor, bookId, "books.getProfile");
   const db = getDb();
-  const [[row], languages, rules] = await Promise.all([
-    db.select().from(book).where(eq(book.id, owned.id)),
-    languagesOf(db, owned.id),
+  const [languages, rules] = await Promise.all([
+    languagesOf(db, row.id),
     db
       .select({ id: standingRule.id, body: standingRule.body, updatedAt: standingRule.updatedAt })
       .from(standingRule)
-      .where(eq(standingRule.bookId, owned.id))
+      .where(eq(standingRule.bookId, row.id))
       .orderBy(standingRule.position),
   ]);
-  if (!row) throw new BookValidationError("This book was just deleted.");
   return {
     id: row.id,
     title: row.title,
@@ -135,11 +141,11 @@ export async function updateProfile(
 ): Promise<{ version: number }> {
   const owned = await ownedBook(actor, bookId, "books.updateProfile");
   const profile: ProfileInput = Profile.parse(input);
-  const [before] = await getDb().select().from(book).where(eq(book.id, owned.id));
+  const expected = Version.parse(version);
   const [row] = await getDb()
     .update(book)
     .set({ ...profile, version: sql`${book.version} + 1`, updatedAt: dbNow() })
-    .where(and(eq(book.id, owned.id), eq(book.version, version)))
+    .where(and(eq(book.id, owned.id), eq(book.version, expected)))
     .returning({ version: book.version });
   if (!row) {
     booksLog().warn(
@@ -148,13 +154,13 @@ export async function updateProfile(
         userId: actor.userId,
         bookId: owned.id,
         target: "profile",
-        expected: version,
+        expected,
       },
       "profile changed elsewhere",
     );
     throw new Conflict("profile");
   }
-  const fields = PROFILE_FIELDS.filter((f) => before?.[f] !== profile[f]);
+  const fields = PROFILE_FIELDS.filter((f) => owned[f] !== profile[f]);
   booksLog().info(
     {
       event: "book.profile.updated",
@@ -177,11 +183,12 @@ export async function updateTruthLabels(
   opts: { reset?: boolean } = {},
 ): Promise<{ version: number }> {
   const owned = await ownedBook(actor, bookId, "books.updateTruthLabels");
+  const expected = Version.parse(version);
   const clean = opts.reset ? [...DEFAULT_TRUTH_LABELS] : TruthLabels.parse(labels);
   const [row] = await getDb()
     .update(book)
     .set({ truthLabels: clean, version: sql`${book.version} + 1`, updatedAt: dbNow() })
-    .where(and(eq(book.id, owned.id), eq(book.version, version)))
+    .where(and(eq(book.id, owned.id), eq(book.version, expected)))
     .returning({ version: book.version });
   if (!row) {
     booksLog().warn(
@@ -190,7 +197,7 @@ export async function updateTruthLabels(
         userId: actor.userId,
         bookId: owned.id,
         target: "labels",
-        expected: version,
+        expected,
       },
       "labels changed elsewhere",
     );

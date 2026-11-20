@@ -28,7 +28,6 @@ import {
   updateProfileAction,
 } from "./actions";
 
-
 export interface Language {
   id: string;
   code: string;
@@ -496,7 +495,7 @@ export function TruthLabelsForm({
         <button type="submit" className="primary" disabled={pending}>
           Save labels
         </button>
-        <button type="submit" name="intent" value="reset" disabled={pending}>
+        <button type="submit" name="intent" value="reset" formNoValidate disabled={pending}>
           Reset to cowriter defaults
         </button>
       </div>

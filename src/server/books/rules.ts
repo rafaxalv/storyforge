@@ -91,10 +91,10 @@ export async function moveRule(
   direction: unknown,
 ): Promise<void> {
   const dir = MoveDirection.parse(direction);
-  await withBook(actor, bookId, "books.moveRule", async (tx, owned) => {
+  await withBook(actor, bookId, "books.moveRule", async (tx, owned, ctx) => {
     const rule = await ruleIn(tx, owned.id, ruleId);
     const order = moveWithin(await ruleIds(tx, owned.id), rule.id, dir);
-    if (!order) return;
+    if (!order) return ctx.unchanged();
     await writeOrder(tx, standingRule, order);
     booksLog().info(
       {

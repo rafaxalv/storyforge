@@ -90,9 +90,38 @@ function cleanAttrs(type: NodeType, attrs: unknown): Record<string, number> | un
   return undefined;
 }
 
-function cleanNode(input: unknown, depth: number, budget: Budget): RichNode {
+const BLOCKS: readonly NodeType[] = [
+  "paragraph",
+  "heading",
+  "bulletList",
+  "orderedList",
+  "blockquote",
+  "horizontalRule",
+];
+const INLINE: readonly NodeType[] = ["text", "hardBreak"];
+
+/**
+ * Which children each node may hold, as in TipTap's StarterKit schema. A document that
+ * breaks these rules would be rejected or emptied by the editor when it loads.
+ */
+const CHILDREN: Record<NodeType, readonly NodeType[]> = {
+  doc: BLOCKS,
+  paragraph: INLINE,
+  heading: INLINE,
+  bulletList: ["listItem"],
+  orderedList: ["listItem"],
+  listItem: BLOCKS,
+  blockquote: BLOCKS,
+  horizontalRule: [],
+  hardBreak: [],
+  text: [],
+};
+/** Nodes that need at least one child (StarterKit content `listItem+`, `block+`, …). */
+const NON_EMPTY: readonly NodeType[] = ["bulletList", "orderedList", "listItem", "blockquote"];
+
+function cleanNode(input: unknown, parent: NodeType, depth: number, budget: Budget): RichNode {
   if (depth > MAX_DEPTH) throw new RichTextError("schema");
-  if (!isRecord(input) || !isNodeType(input.type) || input.type === "doc")
+  if (!isRecord(input) || !isNodeType(input.type) || !CHILDREN[parent].includes(input.type))
     throw new RichTextError("schema");
   const type = input.type;
 
@@ -116,12 +145,13 @@ function cleanNode(input: unknown, depth: number, budget: Budget): RichNode {
   const attrs = cleanAttrs(type, input.attrs);
   if (attrs) node.attrs = attrs;
   if (input.marks !== undefined) throw new RichTextError("schema");
-  if (input.content !== undefined) {
-    if (!Array.isArray(input.content)) throw new RichTextError("schema");
-    if (type === "horizontalRule" || type === "hardBreak") throw new RichTextError("schema");
-    const content = input.content.map((c) => cleanNode(c, depth + 1, budget));
-    if (content.length > 0) node.content = content;
-  }
+  if (input.content !== undefined && !Array.isArray(input.content))
+    throw new RichTextError("schema");
+  const content = (input.content ?? []).map((c: unknown) => cleanNode(c, type, depth + 1, budget));
+  if (NON_EMPTY.includes(type) && content.length === 0) throw new RichTextError("schema");
+  // A list item starts with a paragraph (StarterKit: `paragraph block*`).
+  if (type === "listItem" && content[0]?.type !== "paragraph") throw new RichTextError("schema");
+  if (content.length > 0) node.content = content;
   return node;
 }
 
@@ -165,7 +195,7 @@ export function parseRichText(
   if (!isRecord(raw) || raw.type !== "doc" || !Array.isArray(raw.content))
     throw new RichTextError("schema");
   const budget: Budget = { chars: 0 };
-  const content = raw.content.map((c) => cleanNode(c, 1, budget));
+  const content = raw.content.map((c) => cleanNode(c, "doc", 1, budget));
   if (budget.chars > opts.maxChars) throw new RichTextError("size");
   if (opts.required && budget.chars === 0) throw new RichTextError("empty");
   return { type: "doc", content: content.length > 0 ? content : [{ type: "paragraph" }] };
