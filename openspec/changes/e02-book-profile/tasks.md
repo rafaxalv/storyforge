@@ -48,4 +48,4 @@
 
 ## 7. Docs
 
-- [ ] 7.1 Finalize `doc/book-profile.md` (findability header: files, entrypoints, loggers, events, env, specs; how it works; known gaps), update the `doc/README.md` index, add the E02 conventions (book ownership via `ownedBook`, rich-text node set, versioned saves, ordering, styling tokens) to `openspec/config.yaml` context, and note in `doc/auth.md` that the `books` purge step is registered; verify `grep -l "src/server/books" doc/*.md` finds the doc
+- [x] 7.1 Finalize `doc/book-profile.md` (findability header: files, entrypoints, loggers, events, env, specs; how it works; known gaps), update the `doc/README.md` index, add the E02 conventions (book ownership via `ownedBook`, rich-text node set, versioned saves, ordering, styling tokens) to `openspec/config.yaml` context, and note in `doc/auth.md` that the `books` purge step is registered; verify `grep -l "src/server/books" doc/*.md` finds the doc
