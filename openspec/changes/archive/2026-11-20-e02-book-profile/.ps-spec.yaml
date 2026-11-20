@@ -1,5 +1,6 @@
 checkpoints:
-  plan: { approved: 2026-11-20, notes: "approved as presented (TipTap 3 instead of 2)" }
+  plan: { approved: 2026-11-20, notes: "approved as presented (TipTap 3 instead of 2); revised the same day so pages follow cowriter's Manuscript Desk (author's request)" }
+  validate: { approved: 2026-11-20, notes: "approved; CI green on ddb6fe2 (run 44657952038); several test-plan rows partly covered by automated tests, as noted" }
 review:
   done: 2026-11-20
   findings: "code-review (high, 8 angles): 10"
