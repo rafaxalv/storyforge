@@ -33,6 +33,8 @@
 - [x] 4.8 Concept page with autosave (debounce, single flight, pagehide save, status, conflict handling with copy button); verify in the browser incl. a two-tab conflict
 - [x] 4.9 Concept side panel (`?panel=concept`, two columns ≥ 1,000 px, overlay below with focus management); verify in the browser at desktop and mobile widths
 
+- [ ] 4.10 Desk look (design §12–13, the author's request of 2026-11-20): Desk tokens and fonts (`next/font`), top bar with brand + segmented tabs + user controls, desk grid with left panel, cells; Chapters with cell selection and the settings panel, Profile with section panel, Concept with headings panel and document column, Concept side panel on the right, home and new book; verify side by side with the Desk's screenshot, light and dark, desktop and 375 px, and the e2e suite updated and green
+
 ## 5. Observability
 
 - [x] 5.1 `storyforge:books` events from design.md (book, language, rule, labels, concept, part, chapter, limit, conflict, refusals) with ids and counts only; `LOG_LEVEL=debug` action entry + timing; verify in a manual run that one action's lines share its `requestId`

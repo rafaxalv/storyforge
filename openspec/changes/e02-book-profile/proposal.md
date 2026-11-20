@@ -14,7 +14,7 @@ Every later tool (library, voices, plan, drafts, Claude features, cowriter impor
 - Book outline page: parts with their chapters in order, plus a "Removed" list with restore.
 - Concept: one rich-text document per book with autosave and a conflict check; its own page and a side panel that opens beside any book page.
 - Shared rich-text editor (TipTap, StarterKit nodes only) with server-side validation of the stored document.
-- Styling baseline: colour tokens for light and dark mode, applied to every existing page (fixes unreadable text in dark mode).
+- Look and layout follow cowriter's Manuscript Desk (`tools/manuscript-editor`): its top bar with segmented tabs, left settings panel, cells, fonts and colour tokens (light and dark), applied to every page (also fixes unreadable text in dark mode).
 - `src/shared/id-scheme.ts`: chapter-code rules shared by server and client (paragraph ids arrive in E06).
 - New tables: `book`, `book_language`, `standing_rule`, `concept`, `part`, `chapter`. All rows cascade from `user`, so account deletion removes them.
 
