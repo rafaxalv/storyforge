@@ -10,7 +10,7 @@ let bookUrl = "";
 async function codes(page: Page, list: string): Promise<string[]> {
   return page
     .getByRole("list", { name: list })
-    .locator(":scope > li .chapter-code")
+    .locator(":scope > li > .c-head .pid")
     .allTextContents();
 }
 
@@ -23,7 +23,8 @@ test("create a book from the home page", async ({ page }) => {
   await page.getByRole("link", { name: "New book" }).click();
   await page.getByLabel("Title").fill("The Crossing");
   await page.getByRole("button", { name: "Create book" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "The Crossing" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Book: The Crossing" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Outline" })).toBeVisible();
   await expect(page.locator("#empty-outline")).toBeVisible();
   bookUrl = new URL(page.url()).pathname;
   await page.goto("/");
@@ -108,7 +109,7 @@ test("outline: parts, chapters, codes, keyboard reorder, remove and restore", as
   const addPart = page.getByRole("form", { name: "Add a part" });
   await addPart.getByLabel("Title (EN)").fill("Book One");
   await addPart.getByRole("button", { name: "Add part" }).click();
-  await expect(page.getByRole("heading", { level: 3, name: /Book One/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: /Book One/ })).toBeVisible();
 
   const addChapter = page.getByRole("form", { name: "Add a chapter" });
   for (const [code, title] of [
@@ -140,6 +141,16 @@ test("outline: parts, chapters, codes, keyboard reorder, remove and restore", as
   await expect.poll(() => focusedLabel(page)).toContain("chapter 03");
   await expect(page.getByRole("button", { name: "Move chapter 03 up" })).toBeDisabled();
 
+  // Select a chapter: its settings open in the panel (as in the Manuscript Desk)
+  await page.getByRole("link", { name: "Harbour", exact: true }).click();
+  await expect(page).toHaveURL(/sel=/);
+  const rename = page.getByRole("form", { name: "Rename chapter" });
+  await rename.getByLabel("Title (EN)").fill("Harbour Lights");
+  await rename.getByRole("button", { name: "Save titles" }).click();
+  await expect(page.getByTestId("chapter-02")).toContainText("Harbour Lights");
+  await page.getByRole("link", { name: "Done" }).click();
+  await expect(page.getByRole("form", { name: "Add a chapter" })).toBeVisible();
+
   // Remove and restore
   await page.getByRole("button", { name: "Remove chapter 03" }).click();
   await expect.poll(() => codes(page, list)).toEqual(["01", "02"]);
@@ -161,7 +172,7 @@ test("Concept: autosave, reload, and the side panel beside the outline", async (
   await page.reload();
   await expect(page.getByRole("textbox", { name: "Concept" })).toContainText("A crossing in 1912.");
 
-  await page.getByRole("link", { name: "Outline" }).click();
+  await page.getByRole("link", { name: "Chapters", exact: true }).click();
   await page.getByRole("link", { name: "Open Concept beside" }).click();
   await expect(page).toHaveURL(/panel=concept/);
   const panel = page.locator("#concept-panel");

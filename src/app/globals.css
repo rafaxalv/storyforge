@@ -1,103 +1,145 @@
-/* storyforge styling baseline: colour tokens (light + dark), base elements, a few helpers. */
+/*
+ * storyforge styles, after cowriter's Manuscript Desk (tools/manuscript-editor/index.html):
+ * the same tokens (light + dark), fonts, top bar, segmented tabs, left settings panel and cells.
+ * Fonts come from next/font (src/app/layout.tsx) as --ff-text, --ff-ui, --ff-mono.
+ */
 
 :root {
-  color-scheme: light dark;
-  --bg: #fbfaf7;
-  --surface: #ffffff;
-  --fg: #1d1b18;
-  --muted: #5f5a52;
-  --border: #d9d4ca;
-  --accent: #7a3e12;
-  --accent-fg: #ffffff;
+  --bg: #f3f4f7;
+  --paper: #ffffff;
+  --ink: #1d2230;
+  --ink-2: #4b5266;
+  --ink-3: #6b7285;
+  --rule: #dde0e8;
+  --rule-2: #c9cdd8;
+  --accent: #2f45a8;
+  --accent-soft: #e6eafb;
+  --warn: #9a5b00;
+  --warn-soft: #fbefdc;
+  --ok: #2e6b4a;
   --danger: #a3241a;
-  --ok: #276b37;
-  --focus: #1f6feb;
+  --font-text: var(--ff-text, "Spectral"), "Iowan Old Style", Georgia, serif;
+  --font-ui: var(--ff-ui, "Public Sans"), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--ff-mono, "IBM Plex Mono"), ui-monospace, "SFMono-Regular", Menlo, monospace;
   --radius: 6px;
-  --font-body: Georgia, "Iowan Old Style", "Times New Roman", serif;
-  --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bar-h: 61px;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #171614;
-    --surface: #211f1c;
-    --fg: #ece7df;
-    --muted: #b0a99e;
-    --border: #3d3934;
-    --accent: #e3a36b;
-    --accent-fg: #1a1714;
+  :root:not([data-theme="light"]) {
+    --bg: #12141b;
+    --paper: #1a1d26;
+    --ink: #e6e8ef;
+    --ink-2: #b3b8c7;
+    --ink-3: #959bac;
+    --rule: #2a2e3b;
+    --rule-2: #3a3f50;
+    --accent: #9aabff;
+    --accent-soft: #232a4a;
+    --warn: #f0b860;
+    --warn-soft: #3a2c14;
+    --ok: #7fcfa0;
     --danger: #ff8a7f;
-    --ok: #7fd394;
-    --focus: #79b8ff;
+    color-scheme: dark;
   }
 }
 
-*,
-*::before,
-*::after {
+:root[data-theme="dark"] {
+  --bg: #12141b;
+  --paper: #1a1d26;
+  --ink: #e6e8ef;
+  --ink-2: #b3b8c7;
+  --ink-3: #959bac;
+  --rule: #2a2e3b;
+  --rule-2: #3a3f50;
+  --accent: #9aabff;
+  --accent-soft: #232a4a;
+  --warn: #f0b860;
+  --warn-soft: #3a2c14;
+  --ok: #7fcfa0;
+  --danger: #ff8a7f;
+  color-scheme: dark;
+}
+
+* {
   box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 html,
 body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--fg);
+  min-height: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 body {
-  font-family: var(--font-body);
-  line-height: 1.5;
-  padding: 2rem 1rem 4rem;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.45 var(--font-ui);
+  margin: 0;
 }
 
-h1,
-h2,
-h3 {
-  line-height: 1.2;
-}
-
-a {
-  color: var(--accent);
-}
-
-:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-
-input,
-textarea,
+button,
 select,
-button {
-  font: inherit;
-  font-family: var(--font-ui);
-  font-size: 0.95rem;
-  color: var(--fg);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.35rem 0.6rem;
-}
-
+input,
 textarea {
-  width: 100%;
-  min-height: 6rem;
+  font: inherit;
+  color: inherit;
 }
 
 button {
   cursor: pointer;
 }
 
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
-button.primary {
+a {
+  color: var(--accent);
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid var(--rule-2);
+  background: var(--paper);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 52px;
+  width: 100%;
+}
+
+/* Buttons: the Desk's .btn look for every plain button. */
+button {
+  border: 1px solid var(--rule-2);
+  background: var(--paper);
+  border-radius: var(--radius);
+  padding: 5px 10px;
+}
+
+button.primary,
+.btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent-fg);
+  color: var(--paper);
+  font-weight: 600;
 }
 
 button.danger {
@@ -106,32 +148,63 @@ button.danger {
 }
 
 button.link {
-  border: none;
+  border: 0;
   background: none;
-  color: var(--accent);
   padding: 0;
+  color: var(--accent);
   text-decoration: underline;
 }
 
-label {
-  font-family: var(--font-ui);
-  font-size: 0.95rem;
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
-fieldset {
-  border: 1px solid var(--border);
+.btn {
+  display: inline-block;
+  border: 1px solid var(--rule-2);
+  background: var(--paper);
   border-radius: var(--radius);
+  padding: 5px 10px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.iconbtn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--rule-2);
+  background: var(--paper);
+  border-radius: var(--radius);
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: 14px;
 }
 
 details > summary {
   cursor: pointer;
-  font-family: var(--font-ui);
+  color: var(--ink-2);
+}
+
+fieldset {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+legend {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
 }
 
 /* Helpers */
 
 .muted {
-  color: var(--muted);
+  color: var(--ink-3);
 }
 
 .error {
@@ -143,58 +216,26 @@ details > summary {
 }
 
 .small {
-  font-size: 0.85rem;
+  font-size: 12.5px;
 }
 
 .ui {
   font-family: var(--font-ui);
 }
 
+.mono {
+  font-family: var(--font-mono);
+}
+
 .stack > * + * {
-  margin-top: 0.75rem;
+  margin-top: 12px;
 }
 
 .row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 6px 8px;
   align-items: center;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  max-width: 32rem;
-}
-
-.field input,
-.field textarea,
-.field select {
-  width: 100%;
-}
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1rem;
-}
-
-.plain-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.plain-list > li {
-  border-bottom: 1px solid var(--border);
-  padding: 0.5rem 0;
-}
-
-.narrow {
-  max-width: 26rem;
-  margin: 0 auto;
 }
 
 .visually-hidden {
@@ -206,69 +247,504 @@ details > summary {
   white-space: nowrap;
 }
 
-/* App shell */
+.inline-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
 
-.shell {
-  max-width: 72rem;
+.notice {
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: 12.5px;
+}
+
+.plain-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Fields: the Desk's uppercase label above the control. */
+.field {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.field > label,
+.field > span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+}
+
+.fields-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
+}
+
+.fields-row > .field {
+  flex: 1 1 10rem;
+}
+
+/* Top bar */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  min-height: var(--bar-h);
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-right: auto;
+}
+
+.brand .book {
+  font: 600 17px/1.2 var(--font-text);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.brand .sub {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.brand .sub a {
+  color: var(--ink-3);
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: calc(var(--radius) + 2px);
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs a {
+  padding: 5px 14px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  color: var(--ink-2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tabs a[aria-current="page"] {
+  background: var(--paper);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px var(--rule-2);
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.user form {
+  margin: 0;
+}
+
+/* Desk body: left settings panel + main area (+ the Concept panel on the right). */
+
+.desk {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
+  min-height: 0;
+}
+
+.panel {
+  border-right: 1px solid var(--rule);
+  background: var(--paper);
+  padding: 16px;
+  position: sticky;
+  top: var(--bar-h);
+  align-self: start;
+  max-height: calc(100vh - var(--bar-h));
+  min-height: calc(100vh - var(--bar-h));
+  overflow-y: auto;
+}
+
+.main {
+  padding: 18px 24px 80px;
+  min-width: 0;
+}
+
+.single {
+  flex: 1;
+  padding: 18px 16px 80px;
+}
+
+.p-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.p-head h2 {
+  margin: 0;
+  font: 600 13px/1.2 var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-3);
+}
+
+.pid {
+  font: 500 13px var(--font-mono);
+  color: var(--accent);
+}
+
+.p-empty {
+  color: var(--ink-3);
+  font-size: 13px;
+  padding-block: 8px;
+}
+
+.p-sep {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 18px 0;
+}
+
+.p-nav {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+}
+
+.p-nav a {
+  display: block;
+  padding: 6px 9px;
+  border-radius: var(--radius);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.p-nav a:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.p-nav a.h2 {
+  padding-left: 21px;
+}
+
+.p-nav a.h3 {
+  padding-left: 33px;
+  color: var(--ink-2);
+}
+
+/* Page heads */
+
+.page {
+  max-width: 980px;
   margin: 0 auto;
 }
 
-.site-header {
+.eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+
+.page h1 {
+  font: 600 26px/1.2 var(--font-text);
+  margin: 4px 0 2px;
+}
+
+.meta {
+  color: var(--ink-3);
+  font-size: 12.5px;
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 4px 14px;
+  margin-top: 4px;
+}
+
+.hint {
+  margin: 2px 0 0;
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+/* Sections (the Desk's plan sections) */
+
+.plan-sec {
+  margin-top: 26px;
+  scroll-margin-top: calc(var(--bar-h) + 12px);
+}
+
+.plan-sec > header {
+  display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.5rem;
-  margin-bottom: 2rem;
-  font-family: var(--font-ui);
+  gap: 8px;
 }
 
-.site-header .brand {
-  font-weight: bold;
-  margin-right: auto;
-  font-family: var(--font-body);
-  font-size: 1.15rem;
+.plan-sec h2 {
+  margin: 0;
+  font: 600 18px/1.3 var(--font-text);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
-.content {
-  max-width: 44rem;
+.count {
+  font: 500 12px var(--font-mono);
+  color: var(--ink-3);
+}
+
+.sec-tools {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Cells */
+
+.cells {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.cell {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 8px 12px 12px;
+  position: relative;
+}
+
+.cell.sel {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.cell.sel::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  background: var(--accent);
+  border-radius: 0 2px 2px 0;
+}
+
+.cell.removed {
+  opacity: 0.55;
+}
+
+.cell.removed .c-title {
+  text-decoration: line-through;
+}
+
+.c-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-height: 24px;
+}
+
+.c-tools {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.c-tools button,
+.c-tools select {
+  padding: 2px 8px;
+  font-size: 12.5px;
+}
+
+.c-title {
+  display: block;
+  margin-top: 4px;
+  font: 17px/1.5 var(--font-text);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+a.c-title:hover {
+  color: var(--accent);
+}
+
+.c-alt {
+  font: 14px/1.5 var(--font-text);
+  color: var(--ink-2);
+}
+
+.c-alt .pid {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-right: 6px;
+}
+
+.chip {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--rule-2);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.chip.label {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent);
+}
+
+.chip.warn {
+  background: var(--warn-soft);
+  border-color: transparent;
+  color: var(--warn);
+}
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-top: 10px;
+}
+
+/* The document column (Concept), as the Desk's .doc */
+
+.doc {
+  max-width: 760px;
+  margin: 0 auto;
+  font: 16.5px/1.65 var(--font-text);
+}
+
+.doc .editor {
+  background: transparent;
+  border: 0;
+}
+
+.doc .editor-toolbar {
+  position: sticky;
+  top: var(--bar-h);
+  z-index: 2;
+  background: var(--bg);
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  padding: 6px 0;
+}
+
+.doc .editor .tiptap {
+  padding: 12px 0;
+  min-height: 60vh;
 }
 
 /* Rich text editor */
 
 .editor {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--paper);
+  border: 1px solid var(--rule-2);
   border-radius: var(--radius);
+  font: 16px/1.6 var(--font-text);
 }
 
 .editor-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem;
-  padding: 0.35rem;
-  border-bottom: 1px solid var(--border);
+  gap: 2px;
+  padding: 4px;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-ui);
+}
+
+.editor-toolbar button {
+  min-width: 30px;
+  padding: 3px 7px;
+  font-size: 12.5px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-2);
 }
 
 .editor-toolbar button[aria-pressed="true"] {
-  background: var(--accent);
-  color: var(--accent-fg);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .editor .tiptap {
-  padding: 0.5rem 1rem;
-  min-height: 8rem;
+  padding: 8px 12px;
+  min-height: 6rem;
   outline: none;
 }
 
 .editor .tiptap:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: -2px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.editor .tiptap h1,
+.editor .tiptap h2,
+.editor .tiptap h3 {
+  font-family: var(--font-text);
+  scroll-margin-top: calc(var(--bar-h) + 50px);
+}
+
+.editor .tiptap blockquote {
+  border-left: 3px solid var(--rule-2);
+  margin-left: 0;
+  padding-left: 1rem;
+  color: var(--ink-2);
 }
 
 .editor.read-only {
-  border: none;
+  border: 0;
   background: none;
 }
 
@@ -277,124 +753,104 @@ details > summary {
   min-height: 0;
 }
 
-.editor .tiptap blockquote {
-  border-left: 3px solid var(--border);
-  margin-left: 0;
-  padding-left: 1rem;
-  color: var(--muted);
+.editor.read-only .tiptap p {
+  margin: 0.2em 0;
 }
 
-/* Books */
+/* Book pages: main column + the Concept panel on the right (like the Desk's Claude panel). */
 
-.inline-form {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin: 0;
+.book-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
 }
 
-.book-title {
-  margin: 0 0 0.25rem;
-}
-
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: baseline;
-  font-family: var(--font-ui);
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.tabs a[aria-current="page"] {
-  font-weight: bold;
-  text-decoration: none;
-  color: var(--fg);
-}
-
-.tabs .panel-toggle {
-  margin-left: auto;
-}
-
-.book-layout {
-  display: block;
-}
-
-.book-main {
-  min-width: 0;
+.book-body:has(.concept-panel) {
+  grid-template-columns: minmax(0, 1fr) var(--cp-w, 400px);
 }
 
 .concept-panel {
-  background: var(--bg);
-  border-left: 1px solid var(--border);
-  padding: 0 0 0 1.5rem;
+  position: sticky;
+  top: var(--bar-h);
+  align-self: start;
+  height: calc(100vh - var(--bar-h));
+  overflow-y: auto;
+  background: var(--paper);
+  border-left: 1px solid var(--rule);
+  padding: 12px 16px 40px;
 }
 
-@media (min-width: 1000px) {
-  .book-layout:has(.concept-panel) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 1.5rem;
-    align-items: start;
-  }
-
-  .book-layout:has(.concept-panel) .concept-panel {
-    position: sticky;
-    top: 1rem;
-    max-height: calc(100vh - 2rem);
-    overflow: auto;
-  }
+.concept-panel .doc {
+  font-size: 15.5px;
 }
 
-@media (max-width: 999px) {
+.concept-panel .doc .editor-toolbar {
+  top: -12px;
+  background: var(--paper);
+}
+
+/* Narrow screens: content first, then the panel; the Concept panel slides over the page. */
+
+@media (max-width: 900px) {
+  .desk {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .desk > .panel {
+    order: 2;
+    position: static;
+    max-height: none;
+    min-height: 0;
+    border-right: 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .main {
+    padding-inline: 16px;
+  }
+
+  .book-body:has(.concept-panel) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .concept-panel {
     position: fixed;
     inset: 0;
     z-index: 10;
-    overflow: auto;
-    border-left: none;
-    padding: 1rem;
+    height: auto;
+    border-left: 0;
   }
 }
 
-.outline-part {
-  margin-bottom: 1.5rem;
+/* Reader-ish list of books on the home page */
+
+.book-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
 }
 
-.outline-part > header {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: baseline;
+.book-list .c-title {
+  font-weight: 600;
 }
 
-.outline-part > header h3 {
-  margin: 0;
+/* Sign-in and goodbye: one card in the middle of the page. */
+
+.narrow {
+  max-width: 26rem;
+  margin: 12vh auto 0;
+  padding: 24px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
 }
 
-.chapter-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: baseline;
+.narrow h1 {
+  margin-top: 0;
+  font: 600 22px/1.2 var(--font-text);
 }
 
-.chapter-code {
-  font-family: var(--font-ui);
-  font-weight: bold;
-  min-width: 3rem;
-}
-
-.chapter-controls {
-  margin-left: auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  align-items: center;
-}
-
-.book-list > li a {
-  font-size: 1.1rem;
+.narrow input[type="email"] {
+  width: 100%;
+  margin: 4px 0 10px;
 }

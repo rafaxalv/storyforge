@@ -33,7 +33,7 @@
 - [x] 4.8 Concept page with autosave (debounce, single flight, pagehide save, status, conflict handling with copy button); verify in the browser incl. a two-tab conflict
 - [x] 4.9 Concept side panel (`?panel=concept`, two columns ≥ 1,000 px, overlay below with focus management); verify in the browser at desktop and mobile widths
 
-- [ ] 4.10 Desk look (design §12–13, the author's request of 2026-11-20): Desk tokens and fonts (`next/font`), top bar with brand + segmented tabs + user controls, desk grid with left panel, cells; Chapters with cell selection and the settings panel, Profile with section panel, Concept with headings panel and document column, Concept side panel on the right, home and new book; verify side by side with the Desk's screenshot, light and dark, desktop and 375 px, and the e2e suite updated and green
+- [x] 4.10 Desk look (design §12–13, the author's request of 2026-11-20): Desk tokens and fonts (`next/font`), top bar with brand + segmented tabs + user controls, desk grid with left panel, cells; Chapters with cell selection and the settings panel, Profile with section panel, Concept with headings panel and document column, Concept side panel on the right, home and new book; verify side by side with the Desk's screenshot, light and dark, desktop and 375 px, and the e2e suite updated and green
 
 ## 5. Observability
 

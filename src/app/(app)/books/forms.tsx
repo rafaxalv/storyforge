@@ -170,8 +170,8 @@ export function NewBookForm() {
       </div>
       <fieldset className="stack">
         <legend>First language (the one you write in first)</legend>
-        <div className="row">
-          <div className="field" style={{ maxWidth: "8rem" }}>
+        <div className="fields-row">
+          <div className="field" style={{ flex: "0 1 7rem" }}>
             <label htmlFor="languageCode">Code</label>
             <input
               id="languageCode"
@@ -250,8 +250,8 @@ export function ProfileForm({
           defaultValue={values.oneLiner}
         />
       </div>
-      <div className="row">
-        <div className="field" style={{ maxWidth: "12rem" }}>
+      <div className="fields-row">
+        <div className="field">
           <label htmlFor="p-target">Length target (words)</label>
           <input
             id="p-target"
@@ -264,7 +264,7 @@ export function ProfileForm({
             aria-invalid={Boolean(err("lengthTarget"))}
           />
         </div>
-        <div className="field" style={{ maxWidth: "12rem" }}>
+        <div className="field">
           <label htmlFor="p-limit">Hard limit (words)</label>
           <input
             id="p-limit"
@@ -319,11 +319,32 @@ export function LanguageRow({
   const [state, action, pending] = useActionState<ActionState, FormData>(renameLanguageAction, {});
   const { id, code, name, writtenFirst } = language;
   return (
-    <li className="row" data-testid={`language-${code}`}>
-      <strong className="ui" style={{ minWidth: "4rem" }}>
-        {code}
-      </strong>
-      <form action={action} className="row">
+    <li className="cell" data-testid={`language-${code}`}>
+      <div className="c-head">
+        <strong className="pid">{code}</strong>
+        {writtenFirst && <span className="chip label">written first</span>}
+        <span className="c-tools">
+          {!writtenFirst && (
+            <ItemButton
+              bookId={bookId}
+              op="language.first"
+              id={id}
+              label={`Make ${code} the written-first language`}
+            >
+              Make written-first
+            </ItemButton>
+          )}
+          <MoveButtons
+            bookId={bookId}
+            kind="language"
+            id={id}
+            name={code}
+            first={first}
+            last={last}
+          />
+        </span>
+      </div>
+      <form action={action} className="row" style={{ marginTop: 6 }}>
         <Hidden name="bookId" value={bookId} />
         <Hidden name="id" value={id} />
         <label className="visually-hidden" htmlFor={`lang-name-${id}`}>
@@ -345,22 +366,9 @@ export function LanguageRow({
           </span>
         )}
       </form>
-      {writtenFirst ? (
-        <span className="ok small ui">written first</span>
-      ) : (
-        <ItemButton
-          bookId={bookId}
-          op="language.first"
-          id={id}
-          label={`Make ${code} the written-first language`}
-        >
-          Make written-first
-        </ItemButton>
-      )}
-      <MoveButtons bookId={bookId} kind="language" id={id} name={code} first={first} last={last} />
       {!writtenFirst && (
-        <details>
-          <summary>Remove…</summary>
+        <details style={{ marginTop: 6 }}>
+          <summary className="small">Remove…</summary>
           <p className="small">Removing {code} also removes its part and chapter titles.</p>
           <ItemButton
             bookId={bookId}
@@ -384,20 +392,32 @@ export function AddLanguageForm({ bookId, full }: { bookId: string; full: boolea
     if (state.ok) form.current?.reset();
   }, [state]);
   return (
-    <form ref={form} action={action} className="row" aria-label="Add a language">
+    <form ref={form} action={action} aria-label="Add a language" className="card">
       <Hidden name="bookId" value={bookId} />
-      <label>
-        Code <input name="code" required maxLength={5} size={6} aria-describedby="add-lang-hint" />
-      </label>
-      <label>
-        Name <input name="name" required maxLength={LANGUAGE_NAME_MAX} />
-      </label>
-      <button type="submit" disabled={pending || full}>
-        Add language
-      </button>
-      <span id="add-lang-hint" className="muted small">
-        {full ? `At most ${LIMITS.languages} languages.` : LANGUAGE_CODE_HINT}
-      </span>
+      <div className="fields-row">
+        <div className="field" style={{ flex: "0 1 7rem" }}>
+          <label htmlFor="add-lang-code">Code</label>
+          <input
+            id="add-lang-code"
+            name="code"
+            required
+            maxLength={5}
+            aria-describedby="add-lang-hint"
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="add-lang-name">Name</label>
+          <input id="add-lang-name" name="name" required maxLength={LANGUAGE_NAME_MAX} />
+        </div>
+      </div>
+      <div className="row" style={{ marginTop: 10 }}>
+        <button type="submit" disabled={pending || full}>
+          Add language
+        </button>
+        <span id="add-lang-hint" className="muted small">
+          {full ? `At most ${LIMITS.languages} languages.` : LANGUAGE_CODE_HINT}
+        </span>
+      </div>
       <Message id="add-lang-msg" state={state} />
     </form>
   );
@@ -574,13 +594,13 @@ export function RuleItem({
 }) {
   const [editing, setEditing] = useState(false);
   return (
-    <li data-testid="rule">
-      <div className="row">
-        <strong className="ui">{number}.</strong>
-        <time className="muted small ui" dateTime={date}>
+    <li data-testid="rule" className="cell">
+      <div className="c-head">
+        <strong className="pid">{number}</strong>
+        <time className="chip" dateTime={date}>
           {date}
         </time>
-        <span style={{ marginLeft: "auto" }} className="row">
+        <span className="c-tools">
           <button type="button" onClick={() => setEditing((e) => !e)} aria-expanded={editing}>
             {editing ? "Close" : "Edit"}
           </button>
@@ -745,8 +765,8 @@ export function ChapterForm({
       <Hidden name="bookId" value={bookId} />
       {chapter && <Hidden name="id" value={chapter.id} />}
       {!chapter && (
-        <div className="row">
-          <div className="field" style={{ maxWidth: "8rem" }}>
+        <div className="fields-row">
+          <div className="field" style={{ flex: "0 1 6rem" }}>
             <label htmlFor="new-chapter-code">Code</label>
             <input
               id="new-chapter-code"
@@ -760,7 +780,7 @@ export function ChapterForm({
             />
           </div>
           {parts && parts.length > 0 && (
-            <div className="field" style={{ maxWidth: "16rem" }}>
+            <div className="field">
               <label htmlFor="new-chapter-part">Part</label>
               <select id="new-chapter-part" name="partId" defaultValue={parts.at(-1)?.id ?? ""}>
                 {parts.map((p) => (
