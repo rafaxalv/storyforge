@@ -46,7 +46,7 @@
 - [x] 6.2 Integration tests: `tests/integration/books.test.ts`, `book-languages.test.ts`, `book-rules-labels.test.ts`, `concept.test.ts`, `structure.test.ts`, `books-access.test.ts`, `books-purge.test.ts`, and the book flow added to `log-hygiene.test.ts`; verify green
 - [x] 6.3 E2E: `tests/e2e/books.spec.ts` (create → profile → languages → rules → labels → outline with keyboard moves, remove/restore → Concept autosave + reload → panel → delete) and `tests/e2e/theme.spec.ts` (light/dark contrast); verify green
 - [x] 6.4 Security checks from design.md, each covered: A01 every action refused for the other user and for child ids from another book (`books-access.test.ts`); A03 `npm audit --omit=dev` clean and exact pins (test-plan T14); A05/A08 rich-text allowlist rejects links, HTML, unknown nodes/attrs, oversize and deep docs (`rich-text.test.ts`, `concept.test.ts`) and a grep shows no `dangerouslySetInnerHTML` in `src/`; A06 limits and concurrent moves (`structure.test.ts`, `books.test.ts`); A09 sentinel log test; A10 conflict keeps text (e2e + T9); verify each listed test passes
-- [ ] 6.5 Run the full suite (`npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e`) and execute test-plan.md; every row `pass`
+- [x] 6.5 Run the full suite (`npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e`) and execute test-plan.md; every row `pass`
 
 ## 7. Docs
 

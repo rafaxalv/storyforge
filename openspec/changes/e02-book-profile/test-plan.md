@@ -38,7 +38,7 @@ Prerequisites: Postgres up (`docker-compose up -d`), `npm run db:migrate`; E2E n
 | T13 | Styling: dark mode | Toggle the browser to dark, visit home, sign-in, settings, profile, outline | All text readable (light text on dark background), focus rings visible | playwright | pass (`theme.spec.ts`: contrast ≥ 4.5:1 light and dark on sign-in, home, settings, new book; dark screenshots of home, outline and panel readable; the profile page was not screenshotted) |
 | T16 | Look follows the Manuscript Desk | Open home, Chapters (select a chapter), Profile and Concept (and the panel) at desktop and 375 px, light and dark; compare with the Desk's `lab.png` | Same top bar (serif book title, segmented tabs), left settings panel, cells with mono accent ids, uppercase field labels, Desk fonts and colours; panel after the content on narrow screens; no horizontal scroll | playwright | pass (2026-11-20, browser on the test server with a seeded book: Chapters with a selected chapter, Profile, Concept and the right-side Concept panel at 1300 px light and dark, Chapters at 375 px with the panel after the content and no sideways scroll; e2e covers selecting a chapter and renaming it in the panel) |
 | T14 | Security: dependencies | `npm audit --omit=dev`; check TipTap pins in package.json; `grep -r dangerouslySetInnerHTML src/` | 0 vulnerabilities; exact versions; no matches | console | pass with a note (no high advisories, as CI checks; 4 moderate remain, the known dev-only drizzle-kit → @esbuild-kit chain from E00, none from TipTap; TipTap pinned 3.32.3; 0 matches) |
-| T15 | CI | Push `epic/e02-book-profile` (with the author's OK) | All CI jobs green | manual | todo |
+| T15 | CI | Push `epic/e02-book-profile` (with the author's OK) | All CI jobs green | manual | pass (2026-11-20, run 44657952038 on ddb6fe2: `check` and `image` green) |
 
 ## Observability checks
 
@@ -54,6 +54,6 @@ Prerequisites: Postgres up (`docker-compose up -d`), `npm run db:migrate`; E2E n
 ## Exit criteria
 
 - [x] Automated tests green (2026-11-20 after review fixes: lint, typecheck, 234 Vitest tests, build, 15 Playwright tests)
-- [ ] All interactive cases `pass` (T1–T14 pass, several partly through automated tests as noted; T15 CI waits for the push)
+- [x] All interactive cases `pass` (T1–T16; several partly through automated tests, as each row notes)
 - [x] Observability checks visible
 - [x] No known regressions in previously closed epics (E00, E01 suites green, including the auth and smoke e2e)
