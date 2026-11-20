@@ -4,7 +4,7 @@ import { LIMITS, MoveDirection, moveWithin } from "@/shared/books";
 import { RULE_MAX_CHARS, parseRichText, textLength } from "@/shared/rich-text";
 import { NotFound, type Actor } from "../auth/actor";
 import { standingRule } from "../db/schema";
-import { booksLog, checkLimit, idOf, withBook, writeOrder, type Tx } from "./core";
+import { booksLog, checkLimit, idOf, withBook, writeOrder, type Tx, dbNow } from "./core";
 
 const parseBody = (body: unknown) =>
   parseRichText(body, { maxChars: RULE_MAX_CHARS, required: true });
@@ -69,7 +69,7 @@ export async function updateRule(
     const rule = await ruleIn(tx, owned.id, ruleId);
     await tx
       .update(standingRule)
-      .set({ body: doc, updatedAt: new Date() })
+      .set({ body: doc, updatedAt: dbNow() })
       .where(eq(standingRule.id, rule.id));
     booksLog().info(
       {

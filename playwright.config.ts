@@ -35,6 +35,9 @@ export default defineConfig({
       BETTER_AUTH_SECRET: "e2e-only-secret-0123456789abcdef0123456789",
       BETTER_AUTH_URL: BASE_URL,
       ADMIN_EMAILS: "",
+      // Each test browser sends its own X-Forwarded-For (tests/e2e/sign-in.ts), so the
+      // sign-in rate limit (5 links per 10 min per client) applies per test, not per run.
+      TRUST_PROXY_HOPS: "1",
       GOOGLE_CLIENT_ID: "",
       GOOGLE_CLIENT_SECRET: "",
       EMAIL_TRANSPORT: "smtp",

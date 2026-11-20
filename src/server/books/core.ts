@@ -81,6 +81,9 @@ export async function ownedBook(
   return row;
 }
 
+/** The database's clock: every timestamp comes from one clock (the app's may drift). */
+export const dbNow = () => sql<Date>`now()`;
+
 /** Runs `fn` in a transaction after locking the actor's book. */
 export function withBook<T>(
   actor: Actor,
@@ -91,7 +94,7 @@ export function withBook<T>(
   return getDb().transaction(async (tx) => {
     const owned = await ownedBook(actor, bookId, op, { tx, lock: true });
     const result = await fn(tx, owned);
-    await tx.update(book).set({ updatedAt: new Date() }).where(eq(book.id, owned.id));
+    await tx.update(book).set({ updatedAt: dbNow() }).where(eq(book.id, owned.id));
     return result;
   });
 }

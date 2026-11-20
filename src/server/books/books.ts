@@ -16,7 +16,7 @@ import type { Actor } from "../auth/actor";
 import { getDb } from "../db/client";
 import { book, bookLanguage, concept, standingRule, user } from "../db/schema";
 import { log } from "../log";
-import { BookValidationError, Conflict, booksLog, languagesOf, ownedBook } from "./core";
+import { BookValidationError, Conflict, booksLog, languagesOf, ownedBook, dbNow } from "./core";
 
 export interface BookSummary {
   id: string;
@@ -138,7 +138,7 @@ export async function updateProfile(
   const [before] = await getDb().select().from(book).where(eq(book.id, owned.id));
   const [row] = await getDb()
     .update(book)
-    .set({ ...profile, version: sql`${book.version} + 1`, updatedAt: new Date() })
+    .set({ ...profile, version: sql`${book.version} + 1`, updatedAt: dbNow() })
     .where(and(eq(book.id, owned.id), eq(book.version, version)))
     .returning({ version: book.version });
   if (!row) {
@@ -180,7 +180,7 @@ export async function updateTruthLabels(
   const clean = opts.reset ? [...DEFAULT_TRUTH_LABELS] : TruthLabels.parse(labels);
   const [row] = await getDb()
     .update(book)
-    .set({ truthLabels: clean, version: sql`${book.version} + 1`, updatedAt: new Date() })
+    .set({ truthLabels: clean, version: sql`${book.version} + 1`, updatedAt: dbNow() })
     .where(and(eq(book.id, owned.id), eq(book.version, version)))
     .returning({ version: book.version });
   if (!row) {

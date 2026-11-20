@@ -10,7 +10,7 @@ import {
 import type { Actor } from "../auth/actor";
 import { getDb } from "../db/client";
 import { book, concept } from "../db/schema";
-import { Conflict, booksLog, ownedBook } from "./core";
+import { Conflict, booksLog, ownedBook, dbNow } from "./core";
 
 export interface ConceptDoc {
   body: RichDoc;
@@ -48,7 +48,7 @@ export async function saveConcept(
       );
     throw err;
   }
-  const now = new Date();
+  const now = dbNow();
   const row = await getDb().transaction(async (tx) => {
     const [saved] = await tx
       .update(concept)

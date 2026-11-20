@@ -20,6 +20,7 @@ import {
   writeOrder,
   type Db,
   type Tx,
+  dbNow,
 } from "./core";
 
 async function titlesFor(tx: Tx, bookId: string, input: unknown): Promise<Titles> {
@@ -166,7 +167,7 @@ export async function removePart(actor: Actor, bookId: unknown, partId: unknown)
       );
       throw new BookValidationError("Move or remove this part's chapters first.");
     }
-    await tx.update(part).set({ removedAt: new Date() }).where(eq(part.id, p.id));
+    await tx.update(part).set({ removedAt: dbNow() }).where(eq(part.id, p.id));
     await writeOrder(tx, part, await activePartIds(tx, owned.id));
     booksLog().info(
       { event: "part.removed", userId: actor.userId, bookId: owned.id, partId: p.id },
@@ -321,7 +322,7 @@ export async function removeChapter(
   await withBook(actor, bookId, "books.removeChapter", async (tx, owned) => {
     const c = await chapterIn(tx, owned.id, chapterId);
     if (c.removedAt) return;
-    await tx.update(chapter).set({ removedAt: new Date() }).where(eq(chapter.id, c.id));
+    await tx.update(chapter).set({ removedAt: dbNow() }).where(eq(chapter.id, c.id));
     await writeOrder(tx, chapter, await activeChapterIds(tx, owned.id, c.partId));
     booksLog().info(
       {
