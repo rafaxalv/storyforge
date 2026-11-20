@@ -1,0 +1,285 @@
+/* storyforge styling baseline: colour tokens (light + dark), base elements, a few helpers. */
+
+:root {
+  color-scheme: light dark;
+  --bg: #fbfaf7;
+  --surface: #ffffff;
+  --fg: #1d1b18;
+  --muted: #5f5a52;
+  --border: #d9d4ca;
+  --accent: #7a3e12;
+  --accent-fg: #ffffff;
+  --danger: #a3241a;
+  --ok: #276b37;
+  --focus: #1f6feb;
+  --radius: 6px;
+  --font-body: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #171614;
+    --surface: #211f1c;
+    --fg: #ece7df;
+    --muted: #b0a99e;
+    --border: #3d3934;
+    --accent: #e3a36b;
+    --accent-fg: #1a1714;
+    --danger: #ff8a7f;
+    --ok: #7fd394;
+    --focus: #79b8ff;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  font-family: var(--font-body);
+  line-height: 1.5;
+  padding: 2rem 1rem 4rem;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+}
+
+a {
+  color: var(--accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.6rem;
+}
+
+textarea {
+  width: 100%;
+  min-height: 6rem;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+
+button.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+button.link {
+  border: none;
+  background: none;
+  color: var(--accent);
+  padding: 0;
+  text-decoration: underline;
+}
+
+label {
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+details > summary {
+  cursor: pointer;
+  font-family: var(--font-ui);
+}
+
+/* Helpers */
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.ok {
+  color: var(--ok);
+}
+
+.small {
+  font-size: 0.85rem;
+}
+
+.ui {
+  font-family: var(--font-ui);
+}
+
+.stack > * + * {
+  margin-top: 0.75rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 32rem;
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.plain-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.plain-list > li {
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem 0;
+}
+
+.narrow {
+  max-width: 26rem;
+  margin: 0 auto;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* App shell */
+
+.shell {
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: baseline;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 2rem;
+  font-family: var(--font-ui);
+}
+
+.site-header .brand {
+  font-weight: bold;
+  margin-right: auto;
+  font-family: var(--font-body);
+  font-size: 1.15rem;
+}
+
+.content {
+  max-width: 44rem;
+}
+
+/* Rich text editor */
+
+.editor {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.editor-toolbar button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.editor .tiptap {
+  padding: 0.5rem 1rem;
+  min-height: 8rem;
+  outline: none;
+}
+
+.editor .tiptap:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.editor.read-only {
+  border: none;
+  background: none;
+}
+
+.editor.read-only .tiptap {
+  padding: 0;
+  min-height: 0;
+}
+
+.editor .tiptap blockquote {
+  border-left: 3px solid var(--border);
+  margin-left: 0;
+  padding-left: 1rem;
+  color: var(--muted);
+}

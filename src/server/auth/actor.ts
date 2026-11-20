@@ -28,6 +28,22 @@ export class Forbidden extends Error {
   }
 }
 
+/**
+ * The row does not exist (or its id is malformed). Mapped exactly like Forbidden, so a
+ * missing row and another user's row look the same to the client.
+ */
+export class NotFound extends Error {
+  constructor() {
+    super("Not found");
+    this.name = "NotFound";
+  }
+}
+
+/** True for the errors a client must see as "not found". */
+export function isNotFound(err: unknown): err is Forbidden | NotFound {
+  return err instanceof Forbidden || err instanceof NotFound;
+}
+
 async function requestHeaders(): Promise<Headers> {
   const { headers } = await import("next/headers");
   return new Headers(await headers());
@@ -79,7 +95,7 @@ export function requireAdmin(actor: Actor, op = "unknown"): void {
 }
 
 /**
- * Maps access errors for route handlers: Unauthenticated → 401, Forbidden → 404, both
+ * Maps access errors for route handlers: Unauthenticated → 401, Forbidden/NotFound → 404, both
  * with a generic JSON body. Other errors propagate (generic 500 at the boundary).
  */
 export async function withActorResponse(handler: () => Promise<Response>): Promise<Response> {
@@ -88,7 +104,7 @@ export async function withActorResponse(handler: () => Promise<Response>): Promi
   } catch (err) {
     if (err instanceof Unauthenticated)
       return Response.json({ error: "Not signed in" }, { status: 401 });
-    if (err instanceof Forbidden) return Response.json({ error: "Not found" }, { status: 404 });
+    if (isNotFound(err)) return Response.json({ error: "Not found" }, { status: 404 });
     throw err;
   }
 }

@@ -2,24 +2,24 @@
 
 - [ ] 1.1 Add `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit` (exact pins, current stable 3.x) and change "TipTap 2" to the pinned line in ARCHITECTURE.md and `openspec/config.yaml`; verify install, `npm audit --omit=dev` clean, build passes
 - [ ] 1.2 Styling baseline: `src/app/globals.css` (tokens, dark mode, forms, buttons, focus rings) imported in the root layout, inline body style removed; verify E01 pages readable in light and dark (screenshots) and the E01 e2e suite green
-- [ ] 1.3 `src/shared/id-scheme.ts` (chapter-code regex, kinds, `suggestNextCode`, cowriter-v1 scheme + examples); verify unit tests
-- [ ] 1.4 `src/shared/rich-text.ts` (allowlisted zod schema, limits, depth, size, `emptyDoc()`); verify unit tests for allowed and rejected documents
+- [x] 1.3 `src/shared/id-scheme.ts` (chapter-code regex, kinds, `suggestNextCode`, cowriter-v1 scheme + examples); verify unit tests
+- [x] 1.4 `src/shared/rich-text.ts` (allowlisted schema as a hand-written walker rather than zod, limits, depth, size, `emptyDoc()`); verify unit tests for allowed and rejected documents
 
 ## 2. Database
 
-- [ ] 2.1 `src/server/db/schema/books.ts` (book, book_language, standing_rule, concept, part, chapter; cascades, unique and partial-unique indexes) exported from the schema index; verify `npm run db:generate` produces `0002_books` and `npm run db:migrate` applies it to the dev and test databases
-- [ ] 2.2 Register the `books` purge step; verify the purge integration test runs it and account deletion leaves no book rows
+- [x] 2.1 `src/server/db/schema/books.ts` (book, book_language, standing_rule, concept, part, chapter; cascades, unique and partial-unique indexes) exported from the schema index; verify `npm run db:generate` produces `0002_books` and `npm run db:migrate` applies it to the dev and test databases
+- [x] 2.2 Register the `books` purge step (`src/server/books/purge.ts`, wired in `src/worker.ts`); verify the purge integration test runs it and account deletion leaves no book rows
 
 ## 3. Domain module
 
-- [ ] 3.1 `NotFound` error in `actor.ts` (maps like `Forbidden`) and `src/server/books/access.ts` `ownedBook()`; verify unit + integration tests (missing, malformed, foreign → not found)
-- [ ] 3.2 Books: `createBook`, `listBooks`, `getBookHeader`, `getProfile`, `updateProfile` (versioned), `deleteBook` (typed title), owner limit; verify integration tests
-- [ ] 3.3 Languages: add, rename, move, set written-first, remove (strips titles); verify integration tests incl. invariants
-- [ ] 3.4 Standing rules: add, update, move, remove, numbering by order, dates; verify integration tests
-- [ ] 3.5 Truth labels: replace list (versioned), reset to defaults, validation; verify integration tests
-- [ ] 3.6 Concept: `getConcept`, `saveConcept` (versioned, schema-checked); verify integration tests incl. conflict and rejected content
-- [ ] 3.7 Parts: create, rename, move, remove (only when empty), restore; verify integration tests
-- [ ] 3.8 Chapters: create (code rules, suggestion, duplicates), rename, move (up/down/to part), remove, restore; `getOutline`; verify integration tests incl. "codes never change" and dense positions
+- [x] 3.1 `NotFound` error in `actor.ts` (maps like `Forbidden`) and `ownedBook()` / `withBook()` in `src/server/books/core.ts`; verify unit + integration tests (missing, malformed, foreign → not found)
+- [x] 3.2 Books: `createBook`, `listBooks`, `getBookHeader`, `getProfile`, `updateProfile` (versioned), `deleteBook` (typed title), owner limit; verify integration tests
+- [x] 3.3 Languages: add, rename, move, set written-first, remove (strips titles); verify integration tests incl. invariants
+- [x] 3.4 Standing rules: add, update, move, remove, numbering by order, dates; verify integration tests
+- [x] 3.5 Truth labels: replace list (versioned), reset to defaults, validation; verify integration tests
+- [x] 3.6 Concept: `getConcept`, `saveConcept` (versioned, schema-checked); verify integration tests incl. conflict and rejected content
+- [x] 3.7 Parts: create, rename, move, remove (only when empty), restore; verify integration tests
+- [x] 3.8 Chapters: create (code rules, suggestion, duplicates), rename, move (up/down/to part), remove, restore; `getOutline`; verify integration tests incl. "codes never change" and dense positions
 
 ## 4. Pages and UI
 

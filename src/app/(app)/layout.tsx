@@ -10,18 +10,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const actor = await requirePageActor();
 
   return (
-    <div style={{ maxWidth: "40rem", margin: "0 auto" }}>
-      <header
-        style={{
-          display: "flex",
-          gap: "1rem",
-          alignItems: "baseline",
-          borderBottom: "1px solid #ddd",
-          paddingBottom: "0.5rem",
-          marginBottom: "2rem",
-        }}
-      >
-        <Link href="/" style={{ fontWeight: "bold", marginRight: "auto" }}>
+    <div className="shell">
+      <header className="site-header">
+        <Link href="/" className="brand">
           storyforge
         </Link>
         <span data-testid="user-name">{actor.name}</span>

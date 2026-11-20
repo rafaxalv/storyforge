@@ -1,4 +1,5 @@
 import { PgBoss } from "pg-boss";
+import { registerBooksPurge } from "@/server/books/purge";
 import { requestContext } from "@/server/context";
 import { QUEUES } from "@/server/jobs/names";
 import { PurgePayload, runPurge } from "@/server/jobs/purge";
@@ -10,6 +11,7 @@ import { onShutdown, startProcess } from "@/server/startup";
 async function main(): Promise<void> {
   const env = startProcess("worker");
   const logger = log("worker");
+  registerBooksPurge();
   logger.info({ event: "worker.start" }, "starting job queue");
 
   const boss = new PgBoss({ connectionString: env.DATABASE_URL, schema: "pgboss" });

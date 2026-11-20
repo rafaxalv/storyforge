@@ -16,7 +16,7 @@ export default async function SignInPage({
   if (await getOptionalActor()) redirect(next);
   const env = getEnv();
   return (
-    <main style={{ maxWidth: "24rem", margin: "0 auto" }}>
+    <main className="narrow">
       <h1>Sign in to storyforge</h1>
       <SignInForm next={next} googleEnabled={googleEnabled(env)} />
     </main>
