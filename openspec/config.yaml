@@ -25,6 +25,11 @@ context: |
   concurrent edits of one document use a version column (UPDATE ... WHERE version = expected -> Conflict);
   ordered lists use dense positions (moveWithin + writeOrder); server actions wrap domain calls in bookAction-style
   error mapping; styles use the tokens in src/app/globals.css (light + dark), no inline colours.
+  UI reference (author, 2026-11-20): every page looks and works "more or less" like cowriter's Manuscript Desk
+  (rafaxalv/cowriter tools/manuscript-editor/index.html + README): Desk top bar with segmented tabs in Desk order
+  (Concept, Research, Writing styles, Chapters, Scenes, Draft, Book; Profile last), left settings panel for the
+  selection, cells with mono accent ids, the Desk's fonts and tokens. Read the Desk's behaviour for a tab before
+  planning its epic.
   Logging: pino via log(name) -> child logger, names storyforge:<module>[:<sub>]; requestId from AsyncLocalStorage on every line;
   jobs carry jobId + originating requestId; LOG_LEVEL env (debug locally); never log manuscript or library text.
   Tests: Vitest unit + integration (real Postgres), Playwright e2e; Claude replaced by FakeClaude replaying tests/fixtures/claude/.
