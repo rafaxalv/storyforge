@@ -121,8 +121,8 @@ All roles share one environment: the web server, the worker and `node dist/migra
 
 ## Known gaps / follow-ups
 
-- **Purge steps:** E01 registers none. Every epic that stores user data must call `registerPurgeStep()` (and test it).
-- **Orphan sweep:** a periodic sweep for data whose owner no longer exists is the safety net if a purge job ever exhausts its retries. Add it with the first purge step (E02).
+- **Purge steps:** E01 registers none; E02 registers `books` (`src/server/books/purge.ts`, wired in `src/worker.ts`). Every epic that stores user data must call `registerPurgeStep()` (and test it).
+- **Orphan sweep:** a periodic sweep for data whose owner no longer exists is the safety net if a purge job ever exhausts its retries. Still not built: E02's book tables cascade from `user`, so they can't be orphaned; add the sweep with the first stored files (E03).
 - **`withActorResponse`:** has no route handler yet; E02's first API route uses it.
 - **Real Google sign-in (T10):** not exercised. Needs credentials; the config is tested.
 - **Later optimisations:** a single-statement role sync, pg-boss sharing the app pool, SMTP connection pooling, and one registry to reset all process singletons in tests and at shutdown.

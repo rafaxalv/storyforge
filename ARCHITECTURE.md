@@ -16,7 +16,7 @@ Status: draft v2 for review · 2026-11-17 · companion to [PRD.md](PRD.md)
 |---|---|---|
 | Language / runtime | TypeScript (strict), Node.js 22 LTS | One language for UI, server, worker, importer, texture measures |
 | Web framework | Next.js 15 (App Router), React 19 | Server components, server actions, route handlers in one app |
-| Rich text | TipTap 2 (ProseMirror) | Concept, research notes, rules, character entries; paragraph editor uses a lighter TipTap instance per paragraph |
+| Rich text | TipTap 3 (ProseMirror; 3.32.3 pinned in E02, v2 is maintenance-only) | Concept, research notes, rules, character entries; paragraph editor uses a lighter TipTap instance per paragraph |
 | Database | PostgreSQL 16 | Relational book model, JSONB for flexible sub-structures, full-text search, job queue |
 | ORM / migrations | Drizzle ORM + drizzle-kit | Typed SQL, SQL migrations in the repo |
 | Auth | Better Auth 1.7 (Drizzle adapter, magic-link plugin, Google provider) | Self-hosted sessions in Postgres; stable release line (Auth.js v5 was still beta in Nov 2026) |

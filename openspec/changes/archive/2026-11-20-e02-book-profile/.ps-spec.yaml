@@ -1,0 +1,8 @@
+checkpoints:
+  plan: { approved: 2026-11-20, notes: "approved as presented (TipTap 3 instead of 2); revised the same day so pages follow cowriter's Manuscript Desk (author's request)" }
+  validate: { approved: 2026-11-20, notes: "approved; CI green on ddb6fe2 (run 44657952038); several test-plan rows partly covered by automated tests, as noted" }
+review:
+  done: 2026-11-20
+  findings: "code-review (high, 8 angles): 10"
+  fixed: "all 10: autosave no longer retries every second after a failed save; Concept page catches up with the panel's last save; rich-text check enforces StarterKit nesting; expected versions validated (no more -1 → false conflict); truth-label reset skips form validation; no-op edits don't bump updated_at; ownedBook returns the full row (one read in getProfile); unreachable chapter limit dropped; randomIp shared by integration and e2e helpers"
+  deferred: "home 'Changed' date not refreshed by Concept saves; raw HTTP replay of a server action id not done (access covered by books-access.test.ts)"

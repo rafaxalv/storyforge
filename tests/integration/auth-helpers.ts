@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { sql } from "drizzle-orm";
 import { getActor } from "@/server/auth/actor";
 import { getAuth, handleAuthRequest, type Auth } from "@/server/auth/auth";
+import { randomIp } from "../constants";
 import { extractLink } from "../link";
 import { getDb } from "@/server/db/client";
 import { baseUrl, getEnv } from "@/server/env";
@@ -54,9 +55,7 @@ export async function latestLink(email: string): Promise<string> {
   return link;
 }
 
-/** A random client address, so tests don't share a rate-limit bucket. */
-export const randomIp = () =>
-  `10.${[1, 2, 3].map(() => Math.floor(Math.random() * 250)).join(".")}`;
+export { randomIp };
 
 /** Calls Better Auth's HTTP handler like a browser on this origin would. */
 export async function call(

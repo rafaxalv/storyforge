@@ -6,7 +6,7 @@ context: |
   several languages with shared paragraph ids. Private library = a book's research, characters + continuity, scenarios,
   lexicon; public library = admin-curated public-domain reference books, style studies, texture profiles. Claude features
   run as jobs producing proposals the author accepts. Keep cowriter vocabulary. Source of truth: PRD.md and ARCHITECTURE.md.
-  Stack: TypeScript strict, Node 22, Next.js 15 App Router + React 19, TipTap 2, PostgreSQL 16 + Drizzle ORM,
+  Stack: TypeScript strict, Node 22, Next.js 15 App Router + React 19, TipTap 3, PostgreSQL 16 + Drizzle ORM,
   Better Auth (email magic link + Google, Drizzle adapter), Zod at every server boundary, pg-boss jobs, S3-compatible storage (image chosen in E03),
   @anthropic-ai/sdk with model claude-opus-5-5 (model/effort per feature via env).
   Deploy: one Docker image with two roles (ROLE=web|worker) plus `node dist/migrate.js`, managed Postgres; local = docker compose (Postgres) + npm run dev / npm run worker.
@@ -18,6 +18,18 @@ context: |
   throw Forbidden, which clients see as 404 (never confirm another user's data exists); each entity gets the access test
   pattern from tests/integration/access.test.ts (twoUsers); every epic storing user data registers a purge step
   (registerPurgeStep). Dev servers build into .next-dev, production into .next.
+  Books (E02): book data goes through src/server/books (ownedBook / withBook in core.ts: one ownership check per call,
+  child rows always matched with book_id, book row locked for edits, timestamps from the DB clock via dbNow());
+  rich text = ProseMirror JSON checked by parseRichText (src/shared/rich-text.ts, node set + nesting, extended
+  deliberately per epic) and edited only with src/client/rich-text-editor.tsx (TipTap 3, no HTML strings);
+  concurrent edits of one document use a version column (UPDATE ... WHERE version = expected -> Conflict);
+  ordered lists use dense positions (moveWithin + writeOrder); server actions wrap domain calls in bookAction-style
+  error mapping; styles use the tokens in src/app/globals.css (light + dark), no inline colours.
+  UI reference (author, 2026-11-20): every page looks and works "more or less" like cowriter's Manuscript Desk
+  (rafaxalv/cowriter tools/manuscript-editor/index.html + README): Desk top bar with segmented tabs in Desk order
+  (Concept, Research, Writing styles, Chapters, Scenes, Draft, Book; Profile last), left settings panel for the
+  selection, cells with mono accent ids, the Desk's fonts and tokens. Read the Desk's behaviour for a tab before
+  planning its epic.
   Logging: pino via log(name) -> child logger, names storyforge:<module>[:<sub>]; requestId from AsyncLocalStorage on every line;
   jobs carry jobId + originating requestId; LOG_LEVEL env (debug locally); never log manuscript or library text.
   Tests: Vitest unit + integration (real Postgres), Playwright e2e; Claude replaced by FakeClaude replaying tests/fixtures/claude/.
